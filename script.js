@@ -1,0 +1,41 @@
+// Agregá tus proyectos acá: se muestran solos en la sección "Proyectos".
+const projects = [
+  {
+    title: "Gestor de turnos",
+    description: "Reservas online con agenda diaria para negocios de servicios. (En construcción)",
+    tags: "Supabase · Railway · Vercel",
+    url: ""
+  },
+  {
+    title: "Web para negocio local",
+    description: "Sitio de ejemplo con servicios, ubicación y botón de WhatsApp.",
+    tags: "HTML · CSS · JS",
+    url: ""
+  }
+];
+
+const container = document.getElementById("projects");
+for (const p of projects) {
+  const card = document.createElement("article");
+  card.className = "card";
+  const h = document.createElement("h3");
+  h.textContent = p.title;
+  const d = document.createElement("p");
+  d.textContent = p.description;
+  const t = document.createElement("span");
+  t.className = "tag";
+  t.textContent = p.tags;
+  card.append(h, d, t);
+  if (p.url) {
+    const a = document.createElement("a");
+    a.className = "link";
+    a.href = p.url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.textContent = "Ver proyecto →";
+    card.append(a);
+  }
+  container.append(card);
+}
+
+document.getElementById("year").textContent = new Date().getFullYear();
