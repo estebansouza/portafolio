@@ -1,10 +1,10 @@
 // Agregá tus proyectos acá: se muestran solos en la sección "Proyectos".
 const projects = [
   {
-    title: "Gestor de turnos",
-    description: "Reservas online con agenda diaria para negocios de servicios. (En construcción)",
-    tags: "Supabase · Railway · Vercel",
-    url: ""
+    title: "Gestor de turnos para barbería",
+    description: "Los clientes reservan online eligiendo servicio, barbero y horario libre. El dueño ve y cancela turnos desde un panel con login.",
+    tags: "Supabase · Vercel · JavaScript",
+    url: "https://barberia-turnos-sigma.vercel.app"
   },
   {
     title: "Web para negocio local",
