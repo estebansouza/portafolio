@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Catálogo de autos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <strong id="biz">Automotora</strong>
+      <a href="admin.html">Panel</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="notice"></div>
+    <h1>Nuestros autos</h1>
+    <p class="muted" id="count"></p>
+    <div class="filters">
+      <div><label for="f-brand">Marca</label><select id="f-brand"><option value="">Todas</option></select></div>
+      <div><label for="f-fuel">Combustible</label><select id="f-fuel"><option value="">Todos</option></select></div>
+      <div><label for="f-year">Año desde</label><input id="f-year" type="number" min="1950" placeholder="2018"></div>
+      <div><label for="f-max">Precio hasta</label><input id="f-max" type="number" min="0" placeholder="Sin tope"></div>
+      <div>
+        <label for="f-sort">Ordenar</label>
+        <select id="f-sort">
+          <option value="new">Más nuevos cargados</option>
+          <option value="price-asc">Precio: menor a mayor</option>
+          <option value="price-desc">Precio: mayor a menor</option>
+          <option value="year-desc">Año: más reciente</option>
+        </select>
+      </div>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
+  <script type="module" src="catalog.js"></script>
+</body>
+</html>

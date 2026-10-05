@@ -7,6 +7,12 @@ const projects = [
     url: "https://barberia-turnos-sigma.vercel.app"
   },
   {
+    title: "Stock y cotizador para automotoras",
+    description: "Catálogo online con filtros y fotos, cotizador de cuotas que se envía por WhatsApp y un panel con login para cargar y administrar el stock.",
+    tags: "Supabase · Vercel · JavaScript",
+    url: "https://automotora-stock.vercel.app"
+  },
+  {
     title: "Web para negocio local",
     description: "Sitio de ejemplo con servicios, ubicación y botón de WhatsApp.",
     tags: "HTML · CSS · JS",
