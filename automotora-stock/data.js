@@ -108,6 +108,43 @@ export async function uploadPhoto(file) {
   return client.storage.from("vehicle-photos").getPublicUrl(path).data.publicUrl;
 }
 
+// ---------- Consultas (leads) ----------
+const LEADS_KEY = "auto_demo_leads_v1";
+
+// Registra un click de interés. Nunca debe romper la página: los errores se tragan.
+export async function addLead({ vehicle, kind, monthly = null, months = null }) {
+  const row = {
+    vehicle_id: vehicle.id,
+    vehicle_label: `${vehicle.brand} ${vehicle.model} ${vehicle.year}`.slice(0, 120),
+    kind,
+    monthly: monthly == null ? null : Math.round(monthly),
+    months,
+  };
+  try {
+    if (isDemo) {
+      const all = read(LEADS_KEY, []);
+      all.unshift({ ...row, id: String(Date.now()), created_at: new Date().toISOString() });
+      write(LEADS_KEY, all.slice(0, 500));
+      return;
+    }
+    // Insert sin pedir la fila de vuelta: el público no tiene permiso de lectura.
+    const { error } = await (await sb()).from("leads").insert(row);
+    if (error) throw error;
+  } catch (e) {
+    console.warn("No se pudo registrar la consulta", e);
+  }
+}
+
+export async function listLeads(limit = 200) {
+  if (isDemo) return read(LEADS_KEY, []).slice(0, limit);
+  return must(await (await sb()).from("leads").select("*").order("created_at", { ascending: false }).limit(limit));
+}
+
+export async function deleteLead(id) {
+  if (isDemo) return write(LEADS_KEY, read(LEADS_KEY, []).filter((l) => l.id !== id));
+  must(await (await sb()).from("leads").delete().eq("id", id));
+}
+
 // ---------- Auth ----------
 export async function isLoggedIn() {
   if (isDemo) return read(LS.session, false) === true;

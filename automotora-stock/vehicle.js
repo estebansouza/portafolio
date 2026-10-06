@@ -1,4 +1,4 @@
-import { getVehicle, getSettings } from "./data.js";
+import { getVehicle, getSettings, addLead } from "./data.js";
 import { calcInstallment, money, whatsappLink, inquiryMessage, quoteMessage } from "./quote.js";
 import { h, $ } from "./ui.js";
 
@@ -29,14 +29,33 @@ function quoter(v, settings, url) {
   const monthlyOut = h("div", { class: "result" });
   const detail = h("p", { class: "muted" });
   const wa = h("a", { class: "btn wa", target: "_blank", rel: "noopener" }, "Enviar cotización por WhatsApp");
+  const pdfBtn = h("button", { class: "btn ghost", type: "button" }, "Descargar PDF");
+  const pdfMsg = h("span", { class: "muted", style: "align-self:center" });
+  let cur;
 
   const update = () => {
     const input = { down: Number(down.value) || 0, months: Number(months.value), tna: Number(tna.value) || 0 };
     const q = calcInstallment({ price: v.price, ...input });
+    cur = { input, q };
     monthlyOut.textContent = `${money(q.monthly, v.currency)} / mes`;
     detail.textContent = `Financiás ${money(q.financed, v.currency)} · Total a pagar ${money(q.totalPaid, v.currency)}`;
     wa.href = whatsappLink(settings.whatsapp, quoteMessage(v, q, input, url));
   };
+  wa.addEventListener("click", () =>
+    addLead({ vehicle: v, kind: "cotizacion", monthly: cur.q.monthly, months: cur.input.months }));
+  pdfBtn.addEventListener("click", async () => {
+    pdfBtn.disabled = true;
+    pdfMsg.textContent = "Generando…";
+    try {
+      const { downloadQuotePdf } = await import("./quote-pdf.js");
+      await downloadQuotePdf(v, settings, cur.input, cur.q);
+      addLead({ vehicle: v, kind: "pdf", monthly: cur.q.monthly, months: cur.input.months });
+      pdfMsg.textContent = "";
+    } catch (e) {
+      pdfMsg.textContent = `No se pudo generar el PDF: ${e.message}`;
+    }
+    pdfBtn.disabled = false;
+  });
   for (const el of [down, months, tna]) el.addEventListener("input", update);
   update();
 
@@ -49,7 +68,7 @@ function quoter(v, settings, url) {
       h("div", {}, h("label", { for: "tna" }, "TNA %"), tna)),
     monthlyOut, detail,
     h("p", { class: "muted" }, "Cotización orientativa, sujeta a aprobación crediticia."),
-    h("div", { class: "actions" }, wa));
+    h("div", { class: "actions" }, wa, pdfBtn, pdfMsg));
 }
 
 try {
@@ -74,7 +93,8 @@ try {
         v.photo_credit ? h("p", { class: "muted", style: "font-size:.8rem" }, v.photo_credit) : null,
         h("div", { class: "actions" },
           h("a", { class: "btn wa", target: "_blank", rel: "noopener",
-            href: whatsappLink(settings.whatsapp, inquiryMessage(v, url)) }, "Consultar por WhatsApp")),
+            href: whatsappLink(settings.whatsapp, inquiryMessage(v, url)),
+            onclick: () => addLead({ vehicle: v, kind: "whatsapp" }) }, "Consultar por WhatsApp")),
         h("div", { style: "margin-top:16px" }, quoter(v, settings, url)))));
   }
 } catch (e) {

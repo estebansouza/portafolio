@@ -1,6 +1,6 @@
 import {
   isDemo, isLoggedIn, login, logout, listVehicles, saveVehicle, deleteVehicle,
-  getSettings, saveSettings, uploadPhoto,
+  getSettings, saveSettings, uploadPhoto, listLeads, deleteLead,
 } from "./data.js";
 import { money } from "./quote.js";
 import { h, $, demoNotice } from "./ui.js";
@@ -108,9 +108,50 @@ function settingsForm(s) {
   return form;
 }
 
+const KIND_LABEL = { whatsapp: "Consulta WhatsApp", cotizacion: "Cotización por WhatsApp", pdf: "PDF descargado" };
+
+function leadsPanel(leads, currencyOf) {
+  const byCar = new Map();
+  for (const l of leads) {
+    const row = byCar.get(l.vehicle_label) ?? { label: l.vehicle_label, total: 0, last: l.created_at };
+    row.total += 1;
+    byCar.set(l.vehicle_label, row);
+  }
+  const ranking = [...byCar.values()].sort((a, b) => b.total - a.total).slice(0, 8);
+  const fmt = (iso) => new Date(iso).toLocaleString("es-AR", { dateStyle: "short", timeStyle: "short" });
+
+  const list = h("tbody");
+  const draw = () => list.replaceChildren(...leads.slice(0, 20).map((l) =>
+    h("tr", {},
+      h("td", {}, fmt(l.created_at)),
+      h("td", {}, l.vehicle_label),
+      h("td", {}, KIND_LABEL[l.kind] ?? l.kind,
+        l.monthly ? ` · ${l.months}x ${money(l.monthly, currencyOf(l.vehicle_label))}` : ""),
+      h("td", {}, h("button", { class: "btn danger", title: "Borrar", onclick: async () => {
+        try { await deleteLead(l.id); leads.splice(leads.indexOf(l), 1); draw(); }
+        catch (err) { alert(err.message); }
+      } }, "×")))));
+  draw();
+
+  return h("div", { class: "panel" },
+    h("h2", {}, `Consultas (${leads.length})`),
+    h("p", { class: "muted" }, "Clicks de clientes en WhatsApp, cotizaciones y PDF. No se guardan datos personales."),
+    leads.length === 0
+      ? h("p", { class: "muted" }, "Todavía no hay consultas.")
+      : h("div", {},
+          h("h3", { style: "margin:12px 0 6px;font-size:1rem" }, "Autos más consultados"),
+          h("table", {}, h("tbody", {}, ranking.map((r) =>
+            h("tr", {}, h("td", {}, r.label), h("td", {}, `${r.total} ${r.total === 1 ? "consulta" : "consultas"}`))))),
+          h("h3", { style: "margin:16px 0 6px;font-size:1rem" }, "Últimas 20"),
+          h("table", {}, list)));
+}
+
 async function dashboard() {
   logoutBtn.hidden = false;
-  const [cars, settings] = await Promise.all([listVehicles({ includeSold: true }), getSettings()]);
+  const [cars, settings, leads] = await Promise.all([
+    listVehicles({ includeSold: true }), getSettings(), listLeads(),
+  ]);
+  const currencyOf = (label) => cars.find((c) => `${c.brand} ${c.model} ${c.year}` === label)?.currency ?? "ARS";
   const search = h("input", { placeholder: "Buscar marca o modelo…" });
   const body = h("tbody");
   const edit = (v) => root.replaceChildren(vehicleForm(v, dashboard));
@@ -150,6 +191,7 @@ async function dashboard() {
         h("button", { class: "btn", onclick: () => edit({}) }, "+ Nuevo auto")),
       search,
       h("table", {}, h("thead", {}, h("tr", {}, ["", "Auto", "Precio", "Estado", ""].map((t) => h("th", {}, t)))), body)),
+    leadsPanel(leads, currencyOf),
     settingsForm(settings));
 }
 

@@ -65,3 +65,27 @@ create policy "staff delete photos" on storage.objects
 
 -- Después de crear el usuario del panel:
 --   insert into public.staff (user_id) select id from auth.users where email = 'dueño@ejemplo.com';
+
+-- ---------- Consultas (seguimiento de clicks en WhatsApp / cotización / PDF) ----------
+-- No guarda datos personales: solo qué auto interesó y qué cuota se cotizó.
+create table if not exists public.leads (
+  id uuid primary key default gen_random_uuid(),
+  vehicle_id uuid references public.vehicles (id) on delete set null,
+  vehicle_label text not null check (char_length(vehicle_label) between 1 and 120),
+  kind text not null check (kind in ('whatsapp', 'cotizacion', 'pdf')),
+  monthly numeric check (monthly >= 0),
+  months int check (months between 1 and 120),
+  created_at timestamptz not null default now()
+);
+create index if not exists leads_created_at_idx on public.leads (created_at desc);
+create index if not exists leads_vehicle_id_idx on public.leads (vehicle_id);
+
+alter table public.leads enable row level security;
+
+-- Cualquiera puede registrar una consulta (insert), nadie anónimo puede leerlas.
+create policy "public inserts leads" on public.leads
+  for insert to anon, authenticated with check (char_length(vehicle_label) > 0);
+create policy "staff reads leads" on public.leads
+  for select to authenticated using (public.is_staff());
+create policy "staff deletes leads" on public.leads
+  for delete to authenticated using (public.is_staff());
