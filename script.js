@@ -13,6 +13,12 @@ const projects = [
     url: "https://automotora-stock.vercel.app"
   },
   {
+    title: "Gestión de socios para gimnasio",
+    description: "Panel para el dueño con socios, cuotas y vencimientos, cobro con comprobante en PDF, check-in de asistencia y aviso de morosos por WhatsApp. Incluye la web pública del gimnasio.",
+    tags: "Supabase · Vercel · JavaScript",
+    url: "https://gimnasio-now.vercel.app"
+  },
+  {
     title: "Web para negocio local",
     description: "Sitio de ejemplo con servicios, ubicación y botón de WhatsApp.",
     tags: "HTML · CSS · JS",
