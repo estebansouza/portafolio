@@ -4,7 +4,7 @@ export const SUPABASE_URL = "https://peadyxgzkidckmgdxunm.supabase.co";
 export const SUPABASE_ANON_KEY = "sb_publishable_oormBhvLAUklZNF7TO8F1A_gRfpg7Ve";
 
 export const GYM = {
-  name: "Now Fitness",
+  name: "Gym Now Fitness",
   tagline: "Entrená a tu ritmo, en tu barrio.",
   address: "Doctor Pouey 667, esq. Soca",
   city: "Las Piedras, Canelones",

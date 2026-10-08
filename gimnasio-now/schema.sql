@@ -1,4 +1,4 @@
--- Esquema para Supabase (proyecto propio de Now Fitness). Ejecutar en el SQL editor.
+-- Esquema para Supabase (proyecto propio de Gym Now Fitness). Ejecutar en el SQL editor.
 -- Panel: crear el usuario en Authentication > Users y agregarlo a public.staff (ver al final).
 -- Importante: solo los usuarios de public.staff pueden leer/escribir datos de socios; registrarse no da permisos.
 
@@ -111,7 +111,7 @@ $$;
 revoke all on function public.register_payment(uuid, uuid, numeric, text, date, date, date) from public, anon;
 grant execute on function public.register_payment(uuid, uuid, numeric, text, date, date, date) to authenticated;
 
--- Planes iniciales de Now Fitness (se editan desde el panel).
+-- Planes iniciales de Gym Now Fitness (se editan desde el panel).
 insert into public.plans (name, price, days, description) values
   ('Pase libre', 1300, 30, 'Acceso libre a la sala, todos los días en horario del gimnasio.'),
   ('Pase libre + caminadora', 1500, 30, 'Pase libre e incluye el uso de la caminadora.');

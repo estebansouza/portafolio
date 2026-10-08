@@ -6,19 +6,36 @@ const JSPDF_URL = "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/+esm";
 
 const slug = (s) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
+// Logo como dataURL; si no carga, el comprobante sale igual sin él.
+async function loadLogo() {
+  try {
+    const blob = await (await fetch("img/logo-sm.png")).blob();
+    return await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function downloadReceiptPdf(member, payment) {
   const { jsPDF } = await import(JSPDF_URL);
+  const logo = await loadLogo();
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   const W = 210, M = 18;
 
   doc.setFillColor(29, 31, 33);
   doc.rect(0, 0, W, 32, "F");
+  if (logo) doc.addImage(logo, "PNG", W - M - 24, 4, 24, 24);
   doc.setTextColor(255, 255, 255);
-  doc.setFont("helvetica", "bold").setFontSize(20).text("NOW ", M, 16);
-  doc.setTextColor(238, 44, 60).text("FITNESS", M + doc.getTextWidth("NOW "), 16);
+  doc.setFont("helvetica", "bold").setFontSize(20).text("GYM NOW ", M, 16);
+  doc.setTextColor(238, 44, 60).text("FITNESS", M + doc.getTextWidth("GYM NOW "), 16);
   doc.setTextColor(255, 255, 255).setFont("helvetica", "normal").setFontSize(10)
     .text("Comprobante de pago", M, 25)
-    .text(fmtDate(payment.paid_on), W - M, 25, { align: "right" });
+    .text(fmtDate(payment.paid_on), W - M - (logo ? 28 : 0), 25, { align: "right" });
 
   let y = 48;
   doc.setTextColor(20, 24, 36).setFont("helvetica", "bold").setFontSize(18).text(member.name, M, y);

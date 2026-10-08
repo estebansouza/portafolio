@@ -18,7 +18,14 @@ a { color: var(--accent); text-decoration: none; }
 header.top { border-bottom: 1px solid var(--border); padding: 14px 0; }
 header.top .wrap { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 header.top strong { font-size: 1.1rem; letter-spacing: .02em; }
-.brand b { color: var(--accent); }
+.brand-logo { display: inline-flex; align-items: center; gap: 10px; color: var(--text); }
+.brand-logo img { height: 48px; width: auto; display: block; }
+.hero-grid { display: flex; align-items: center; justify-content: space-between; gap: 32px; }
+.hero-logo { width: min(300px, 40%); height: auto; flex: none; filter: drop-shadow(0 8px 28px rgba(238, 44, 60, .25)); }
+@media (max-width: 640px) {
+  .hero-grid { flex-direction: column-reverse; align-items: flex-start; }
+  .hero-logo { width: 150px; }
+}
 h1 { font-size: clamp(1.8rem, 5vw, 3rem); margin: 0 0 8px; line-height: 1.1; }
 h2 { margin: 0 0 12px; font-size: 1.2rem; }
 h3 { margin: 0 0 4px; }
