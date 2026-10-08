@@ -90,6 +90,16 @@ export async function saveMember(m) {
   must(m.id ? await table.update(strip(m)).eq("id", m.id) : await table.insert(strip(m)));
 }
 
+// Borra el socio y, en cascada, sus pagos y asistencias.
+export async function deleteMember(id) {
+  if (isDemo) {
+    write(LS.checkins, demo("checkins").filter((c) => c.member_id !== id));
+    write(LS.payments, demo("payments").filter((p) => p.member_id !== id));
+    return write(LS.members, demo("members").filter((m) => m.id !== id));
+  }
+  must(await (await sb()).from("members").delete().eq("id", id));
+}
+
 // ---------- Pagos ----------
 // Registra el pago y actualiza el vencimiento del socio en una sola transacción (rpc register_payment).
 export async function registerPayment({ member, plan, amount, method, paidOn, coversFrom, expiresOn }) {

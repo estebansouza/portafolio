@@ -185,7 +185,11 @@ function memberForm() {
       field("Plan", plan), field("Vence el", expires), field("Estado", status), field("Notas", notes, "full")),
     msg,
     h("div", { class: "actions" }, h("button", { class: "btn", type: "submit" }, "Guardar"),
-      h("button", { class: "btn ghost", type: "button", onclick: () => { state.editing = null; draw(); } }, "Cancelar")));
+      h("button", { class: "btn ghost", type: "button", onclick: () => { state.editing = null; draw(); } }, "Cancelar"),
+      m.id ? h("button", { class: "btn danger", type: "button", onclick: () => {
+        const ok = confirm(`¿Eliminar a ${m.name}?\n\nSe borran también todos sus pagos e ingresos y no se puede deshacer.\nSi solo dejó de venir, usá el estado "Baja" para conservar el historial.`);
+        if (ok) run(async () => { await db.deleteMember(m.id); state.editing = null; await reload(); }, `${m.name} eliminado.`);
+      } }, "Eliminar socio") : null));
 }
 
 function viewSocios() {
