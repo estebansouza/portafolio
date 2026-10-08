@@ -10,6 +10,7 @@
   --danger: #ff6b6b;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 body { margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, sans-serif; line-height: 1.5; }
 a { color: var(--accent); text-decoration: none; }
 .wrap { max-width: 1000px; margin: 0 auto; padding: 0 16px; }
