@@ -39,6 +39,7 @@ async function render() {
         h("p", { class: "muted" }, `${GYM.address} · ${GYM.city}`),
         h("div", { class: "actions" },
           h("a", { class: "btn wa", href: whatsappLink(GYM.whatsapp, `Hola, quiero consultar por ${GYM.name}.`), target: "_blank", rel: "noopener" }, "Escribinos por WhatsApp"),
+          h("a", { class: "btn", href: "rutina.html" }, "Armá tu rutina"),
           h("a", { class: "btn ghost", href: mapsUrl, target: "_blank", rel: "noopener" }, "Cómo llegar"))),
       h("img", { class: "hero-logo", src: "img/logo.png", alt: `Logo de ${GYM.name}`, width: "300", height: "300" })),
     hoursSection(),
