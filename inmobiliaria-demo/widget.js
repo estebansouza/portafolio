@@ -1,6 +1,6 @@
 /* Widget de chat para la web de una inmobiliaria. Instalación (una línea, antes de </body>):
  *   <script src="https://TU-SITIO/widget.js" data-agency="mi-inmobiliaria" async></script>
- * Opciones: data-color="#1f5a43"  data-label="Consultanos"  data-position="left" | "right"
+ * Opciones: data-color="#1581c4"  data-label="Consultanos"  data-position="left" | "right"
  * El chat corre en un iframe de nuestro dominio, así no choca con los estilos ni los scripts de la web. */
 (function () {
   var script = document.currentScript;
@@ -8,7 +8,7 @@
   if (document.getElementById("inmo-widget")) return;
 
   var base = script.src.replace(/[^/]*$/, ""); // carpeta desde donde se sirve widget.js
-  var color = /^#[0-9a-fA-F]{3,8}$/.test(script.dataset.color || "") ? script.dataset.color : "#1f5a43";
+  var color = /^#[0-9a-fA-F]{3,8}$/.test(script.dataset.color || "") ? script.dataset.color : "#1581c4";
   var label = script.dataset.label || "Consultanos";
   var side = script.dataset.position === "left" ? "left" : "right";
 

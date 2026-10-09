@@ -1,6 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Ilustración de propiedad">
-  <rect width="800" height="500" fill="#cfe6f5"/>
-  <circle cx="660" cy="90" r="42" fill="#fff" opacity=".7"/>
-  <rect y="360" width="800" height="140" fill="#9ec28b"/>
-  #6b4f3a
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Ilustración de una casa">
+  <rect width="800" height="500" fill="#cfe9f8"/>
+  <circle cx="660" cy="90" r="46" fill="#f5b800"/>
+  <rect y="360" width="800" height="140" fill="#fbeebb"/>
+  <rect x="230" y="190" width="340" height="190" fill="#ffffff"/>
+  <polygon points="205,195 400,90 595,195" fill="#1581c4"/>
+  <rect x="520" y="110" width="30" height="60" fill="#0f5f95"/>
+  <rect x="370" y="270" width="60" height="110" fill="#0f5f95"/>
+  <rect x="265" y="240" width="70" height="60" fill="#bfe0f5"/>
+  <rect x="465" y="240" width="70" height="60" fill="#bfe0f5"/>
+  <rect x="150" y="372" width="500" height="10" fill="#f5b800" opacity=".55"/>
 </svg>
