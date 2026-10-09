@@ -1,2 +1,2 @@
 schema.sql
-format.test.mjs
+*.test.mjs

@@ -43,7 +43,9 @@ function heatmap(visits) {
 
 function activity(props, leads, deals, visits, calls) {
   const events = [
-    ...leads.map((l) => ({ at: l.created_at, icon: "chat", tone: "blue", text: `Nueva consulta: ${l.property_label}` })),
+    ...leads.map((l) => (l.status === "atencion"
+      ? { at: l.created_at, icon: "chat", tone: "terra", text: `Requiere atención: ${l.property_label}` }
+      : { at: l.created_at, icon: "chat", tone: "blue", text: `${l.kind === "chat" ? "Chat respondido por IA" : "Nueva consulta"}: ${l.property_label}` })),
     ...visits.filter((v) => v.status === "confirmada").slice(0, 3).map((v) => ({ at: v.created_at, icon: "calendar", tone: "green", text: `Visita confirmada: ${v.property_label}` })),
     ...deals.map((d) => {
       const base = { at: d.stage_at };

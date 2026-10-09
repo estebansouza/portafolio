@@ -22,7 +22,7 @@ const projects = [
     title: "Catálogo y panel para inmobiliarias",
     description: "Web pública de propiedades en dólares (venta y alquiler) y un panel de gestión con metas del mes, comisión proyectada, mapa de visitas, pipeline de operaciones, conversaciones, llamadas y contactos. Pensado para cualquier país.",
     tags: "Supabase · Vercel · JavaScript",
-    url: "" // Completar con la URL de Vercel cuando se despliegue inmobiliaria-demo
+    url: "https://inmobiliaria-demo-liart.vercel.app"
   },
   {
     title: "Web para negocio local",

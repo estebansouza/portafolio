@@ -18,7 +18,7 @@ export function inquiryMessage(p, url) {
   return `Hola! Me interesa la propiedad "${p.title}" (${p.operation}, ${usd(p.price, p.operation)}). ${url}`;
 }
 
-const norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+export const norm = (s) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 // filters: { operation, type, bedrooms (mínimo), max (USD), q (texto) }
 export function filterProperties(list, f = {}) {

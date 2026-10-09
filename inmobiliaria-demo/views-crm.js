@@ -47,22 +47,32 @@ export async function conversations(root, only = "") {
         await updateLead(l.id, { status: "respondido" });
         location.hash = "#/pipeline";
       }),
-      l.status === "nuevo" ? act("Marcar respondida", "ghost", async () => { await updateLead(l.id, { status: "respondido" }); again(); }) : null,
+      l.status !== "respondido" ? act("Marcar respondida", "ghost", async () => { await updateLead(l.id, { status: "respondido" }); again(); }) : null,
       act("×", "danger", async () => { if (confirm("¿Borrar esta conversación?")) { await deleteLead(l.id); again(); } }));
 
+    const thread = l.messages ?? [];
+    const badge = { nuevo: ["reservada", "nuevo"], atencion: ["cerrada", "requiere atención"], respondido: ["disponible", "respondido"] }[l.status] ?? ["", l.status];
     return h("article", { class: `convo ${l.status}` },
       h("div", { class: "convo-head" },
-        h("strong", {}, l.name || "Visitante (click en WhatsApp)"),
-        h("span", { class: `badge ${l.status === "nuevo" ? "reservada" : "disponible"}` }, l.status),
+        h("strong", {}, l.name || (l.kind === "chat" ? "Visitante (chat)" : "Visitante (click en WhatsApp)")),
+        h("span", { class: `badge ${badge[0]}` }, badge[1]),
+        l.kind === "chat" ? h("span", { class: "badge" }, "chat con IA") : null,
         h("small", { class: "muted" }, relTime(l.created_at))),
       h("div", { class: "muted" }, `${l.property_label}${l.contact ? ` · ${l.contact}` : ""}`),
-      l.message ? h("p", {}, l.message) : null,
+      thread.length
+        ? h("details", { open: l.status === "atencion" },
+            h("summary", {}, `Ver conversación (${thread.length} mensajes)`),
+            h("div", { class: "transcript" }, thread.map((m) =>
+              h("div", { class: `bubble ${m.role === "user" ? "me" : "bot"}` }, m.text))))
+        : (l.message ? h("p", {}, l.message) : null),
       actions);
   };
 
   root.replaceChildren(
     pageHead("Conversaciones",
       h("button", { class: `btn ${only ? "ghost" : ""}`, onclick: () => again("") }, "Todas"),
+      h("button", { class: `btn ${only === "atencion" ? "" : "ghost"}`, onclick: () => again("atencion") },
+        `Requieren atención (${leads.filter((l) => l.status === "atencion").length})`),
       h("button", { class: `btn ${only === "nuevo" ? "" : "ghost"}`, onclick: () => again("nuevo") },
         `Nuevas (${leads.filter((l) => l.status === "nuevo").length})`)),
     h("div", { class: "stack" }, shown.length ? shown.map(card) : h("p", { class: "muted" }, "No hay conversaciones.")));

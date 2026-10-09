@@ -1,5 +1,6 @@
-import { getProperty, getSettings, addLead } from "./data.js";
+import { getProperty, getSettings, addLead, saveChat } from "./data.js";
 import { usd, whatsappLink, inquiryMessage, place } from "./format.js";
+import { askAssistant } from "./assistant.js";
 import { h, $ } from "./ui.js";
 
 const root = $("#root");
@@ -21,28 +22,66 @@ function gallery(p) {
   return h("div", { class: "gallery" }, main, photos.length > 1 ? thumbs : null);
 }
 
-function inquiryForm(p) {
-  const name = h("input", { id: "i-name", required: true, maxlength: "80", autocomplete: "name" });
-  const contact = h("input", { id: "i-contact", required: true, maxlength: "120", placeholder: "Teléfono o email", autocomplete: "email" });
-  const message = h("textarea", { id: "i-msg", rows: "3", maxlength: "1000" }, `Hola, quisiera más información sobre "${p.title}".`);
-  const msg = h("p", { class: "muted" });
-  const form = h("form", { class: "panel stack" },
-    h("h2", {}, "Dejá tu consulta"),
-    h("div", {}, h("label", { for: "i-name" }, "Nombre"), name),
-    h("div", {}, h("label", { for: "i-contact" }, "Contacto"), contact),
-    h("div", {}, h("label", { for: "i-msg" }, "Mensaje"), message),
-    h("button", { class: "btn", type: "submit" }, "Enviar consulta"), msg);
+// Chat con el asistente: responde al instante y, si hace falta una persona, deja la
+// conversación marcada "requiere atención" en el panel del dueño.
+function chat(p, settings) {
+  const session = crypto.randomUUID();
+  const messages = [];
+  let status = "nuevo";
+  let busy = false;
+
+  const name = h("input", { id: "c-name", maxlength: "80", placeholder: "Tu nombre", autocomplete: "name" });
+  const contact = h("input", { id: "c-contact", maxlength: "120", placeholder: "Teléfono o email", autocomplete: "email" });
+  const log = h("div", { class: "chat-log", role: "log", "aria-live": "polite" });
+  const hint = h("p", { class: "muted", hidden: true }, "Dejá tu nombre y contacto arriba para que un asesor pueda escribirte.");
+  const input = h("input", { id: "c-input", maxlength: "500", placeholder: "Escribí tu consulta…", autocomplete: "off" });
+  const send = h("button", { class: "btn", type: "submit" }, "Enviar");
+
+  const bubble = (m) => h("div", { class: `bubble ${m.role === "user" ? "me" : "bot"}` }, m.text);
+  const persist = () => saveChat({ session, property: p, name: name.value.trim(), contact: contact.value.trim(), messages, status });
+  const push = (role, text) => {
+    const m = { role, text, at: new Date().toISOString() };
+    messages.push(m);
+    log.append(bubble(m));
+    log.scrollTop = log.scrollHeight;
+  };
+
+  push("assistant", `¡Hola! Soy el asistente virtual de ${settings.business_name}. Preguntame lo que quieras sobre esta propiedad.`);
+  messages.length = 0; // el saludo no cuenta como conversación hasta que el visitante escriba
+  for (const el of [name, contact]) el.addEventListener("change", () => { if (messages.length) persist(); });
+
+  const form = h("form", { class: "chat-form" }, input, send);
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    try {
-      await addLead({ property: p, kind: "consulta", name: name.value.trim(), contact: contact.value.trim(), message: message.value.trim() });
-      form.replaceChildren(h("h2", {}, "¡Gracias!"), h("p", { class: "ok" }, "Recibimos tu consulta. Te contactamos a la brevedad."));
-    } catch (err) {
-      msg.className = "msg";
-      msg.textContent = `No se pudo enviar: ${err.message}`;
+    const text = input.value.trim();
+    if (!text || busy) return;
+    busy = true;
+    input.value = "";
+    send.disabled = true;
+    push("user", text);
+    const typing = h("div", { class: "bubble bot typing" }, "Escribiendo…");
+    log.append(typing);
+    log.scrollTop = log.scrollHeight;
+    const { reply, handoff } = await askAssistant({ property: p, businessName: settings.business_name, messages });
+    typing.remove();
+    push("assistant", reply);
+    if (handoff) {
+      status = "atencion";
+      hint.hidden = !!(contact.value.trim() || name.value.trim());
     }
+    await persist();
+    busy = false;
+    send.disabled = false;
+    input.focus();
   });
-  return form;
+
+  return h("div", { class: "panel stack" },
+    h("h2", {}, "Consultá con nuestro asistente"),
+    h("div", { class: "form-grid" },
+      h("div", {}, h("label", { for: "c-name" }, "Nombre (opcional)"), name),
+      h("div", {}, h("label", { for: "c-contact" }, "Contacto (opcional)"), contact)),
+    log, hint, form,
+    h("small", {}, "Respuestas automáticas. Si hace falta, un asesor te contacta."));
 }
 
 try {
@@ -73,7 +112,7 @@ try {
           h("a", { class: "btn wa", target: "_blank", rel: "noopener",
             href: whatsappLink(settings.whatsapp, inquiryMessage(p, url)),
             onclick: () => addLead({ property: p, kind: "whatsapp" }).catch(() => {}) }, "Consultar por WhatsApp")),
-        h("div", { style: "margin-top:16px" }, inquiryForm(p)))));
+        h("div", { style: "margin-top:16px" }, chat(p, settings)))));
   }
 } catch (e) {
   root.replaceChildren(h("p", { class: "msg" }, `Error: ${e.message}`));

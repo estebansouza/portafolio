@@ -31,7 +31,7 @@ const ago = (ms) => new Date(Date.now() - ms).toISOString();
 let seq = 0;
 const newId = () => `${Date.now()}${seq++}`;
 
-const LS = { props: "inmo_demo_properties_v2", settings: "inmo_demo_settings", session: "inmo_demo_session", leads: "inmo_demo_leads_v2" };
+const LS = { props: "inmo_demo_properties_v2", settings: "inmo_demo_settings", session: "inmo_demo_session", leads: "inmo_demo_leads_v3" };
 const read = (k, fallback) => {
   try { const raw = localStorage.getItem(k); return raw ? JSON.parse(raw) : fallback; } catch { return fallback; }
 };
@@ -53,8 +53,16 @@ function demoLeads() {
       const p = demoProps()[i];
       return { id: newId(), property_id: p.id, property_label: p.title, kind, name, contact, message, status, created_at: ago(ms) };
     };
+    const chat = mk(4, "chat", "Rodrigo Silva", "59899123456", "¿Se puede visitar el sábado por la mañana?", "atencion", 4 * 60 * 1000);
+    chat.session_id = newId();
+    chat.messages = [
+      { role: "user", text: "Hola, ¿se puede visitar el sábado por la mañana?", at: ago(5 * 60 * 1000) },
+      { role: "assistant", text: "¡Con gusto! Para coordinar una visita necesito tu nombre y un teléfono o email. Un asesor te confirma el horario a la brevedad.", at: ago(5 * 60 * 1000) },
+      { role: "user", text: "Soy Rodrigo, mi cel es 099 123 456.", at: ago(4 * 60 * 1000) },
+      { role: "assistant", text: "¡Gracias, Rodrigo! Ya avisé al equipo: te escriben para confirmar la visita.", at: ago(4 * 60 * 1000) },
+    ];
     leads = [
-      mk(4, "consulta", "Rodrigo Silva", "59899123456", "¿Se puede visitar el sábado por la mañana?", "nuevo", 4 * 60 * 1000),
+      chat,
       mk(5, "consulta", "Paula Méndez", "paula@correo.com", "Busco algo de 2 dormitorios en Pocitos, ¿acepta mascotas?", "nuevo", 52 * 60 * 1000),
       mk(1, "whatsapp", "", "", "", "nuevo", 3 * HOUR),
       mk(0, "consulta", "Gonzalo Ferreira", "59898765432", "Me interesa, ¿tiene financiación el propietario?", "respondido", 26 * HOUR),
@@ -160,6 +168,32 @@ export async function addLead({ property, kind, name = "", contact = "", message
   // Insert sin pedir la fila de vuelta: el público no tiene permiso de lectura.
   const { error } = await (await sb()).from("leads").insert(row);
   if (error) throw error;
+}
+
+// Guarda (crea o actualiza) la conversación de chat de un visitante. status: "nuevo" | "atencion".
+// Si falla no debe romper el chat: el visitante igual recibe su respuesta.
+export async function saveChat({ session, property, name = "", contact = "", messages, status }) {
+  try {
+    if (isDemo) {
+      const all = demoLeads();
+      const i = all.findIndex((l) => l.session_id === session);
+      const message = messages.find((m) => m.role === "user")?.text.slice(0, 1000) ?? "";
+      const row = {
+        session_id: session, property_id: property.id, property_label: String(property.title).slice(0, 120), kind: "chat",
+        name: name.slice(0, 80), contact: contact.slice(0, 120), message, messages, status,
+      };
+      if (i >= 0) all[i] = { ...all[i], ...row };
+      else all.unshift({ ...row, id: newId(), created_at: new Date().toISOString() });
+      write(LS.leads, all.slice(0, 500));
+      return;
+    }
+    must(await (await sb()).rpc("save_chat", {
+      p_session: session, p_property_id: property.id, p_label: String(property.title).slice(0, 120),
+      p_name: name.slice(0, 80), p_contact: contact.slice(0, 120), p_messages: messages, p_status: status,
+    }));
+  } catch (e) {
+    console.warn("No se pudo guardar el chat", e);
+  }
 }
 
 export async function listLeads(limit = 200) {

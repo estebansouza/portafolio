@@ -73,15 +73,20 @@ create policy "staff delete photos" on storage.objects
 --   insert into public.staff (user_id) select id from auth.users where email = 'dueño@ejemplo.com';
 
 -- ---------- Consultas (leads) ----------
--- 'whatsapp' = click de interés sin datos personales; 'consulta' = formulario que el visitante envía.
+-- 'whatsapp' = click de interés sin datos personales; 'consulta' = formulario;
+-- 'chat' = conversación con el asistente de IA (hilo completo en messages).
+-- status: 'nuevo', 'atencion' (la IA pide que intervenga una persona) o 'respondido'.
 create table if not exists public.leads (
   id uuid primary key default gen_random_uuid(),
+  session_id uuid unique,
   property_id uuid references public.properties (id) on delete set null,
   property_label text not null check (char_length(property_label) between 1 and 160),
-  kind text not null check (kind in ('whatsapp', 'consulta')),
+  kind text not null check (kind in ('whatsapp', 'consulta', 'chat')),
   name text not null default '' check (char_length(name) <= 80),
   contact text not null default '' check (char_length(contact) <= 120),
   message text not null default '' check (char_length(message) <= 1000),
+  messages jsonb not null default '[]' check (jsonb_typeof(messages) = 'array'),
+  status text not null default 'nuevo' check (status in ('nuevo', 'atencion', 'respondido')),
   created_at timestamptz not null default now()
 );
 create index if not exists leads_created_at_idx on public.leads (created_at desc);
@@ -91,7 +96,8 @@ alter table public.leads enable row level security;
 
 -- Cualquiera puede registrar una consulta (insert), nadie anónimo puede leerlas.
 create policy "public inserts leads" on public.leads
-  for insert to anon, authenticated with check (char_length(property_label) > 0);
+  for insert to anon, authenticated
+  with check (char_length(property_label) > 0 and status = 'nuevo' and messages = '[]'::jsonb and kind <> 'chat');
 create policy "staff reads leads" on public.leads
   for select to authenticated using (public.is_staff());
 create policy "staff deletes leads" on public.leads
@@ -103,10 +109,29 @@ alter table public.settings
   add column if not exists goal_listings int not null default 12,
   add column if not exists goal_commission numeric not null default 42000;
 
-alter table public.leads add column if not exists status text not null default 'nuevo'
-  check (status in ('nuevo', 'respondido'));
 create policy "staff updates leads" on public.leads
   for update to authenticated using (public.is_staff()) with check (public.is_staff());
+
+-- Chat con IA: el visitante (anónimo) guarda su hilo con una función que solo puede
+-- crear/actualizar la fila que corresponde a su session_id (un uuid aleatorio que genera su navegador).
+create or replace function public.save_chat(
+  p_session uuid, p_property_id uuid, p_label text, p_name text, p_contact text, p_messages jsonb, p_status text
+) returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if p_session is null or jsonb_typeof(p_messages) <> 'array'
+     or jsonb_array_length(p_messages) > 60 or pg_column_size(p_messages) > 60000 then
+    raise exception 'chat inválido';
+  end if;
+  if p_status not in ('nuevo', 'atencion') then raise exception 'estado inválido'; end if;
+  insert into public.leads (session_id, property_id, property_label, kind, name, contact, messages, status)
+  values (p_session, p_property_id, left(coalesce(p_label, ''), 120), 'chat',
+          left(coalesce(p_name, ''), 80), left(coalesce(p_contact, ''), 120), p_messages, p_status)
+  on conflict (session_id) do update
+    set name = excluded.name, contact = excluded.contact, messages = excluded.messages, status = excluded.status;
+end;
+$$;
+revoke all on function public.save_chat(uuid, uuid, text, text, text, jsonb, text) from public;
+grant execute on function public.save_chat(uuid, uuid, text, text, text, jsonb, text) to anon, authenticated;
 
 create table if not exists public.contacts (
   id uuid primary key default gen_random_uuid(),
