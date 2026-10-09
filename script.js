@@ -19,6 +19,12 @@ const projects = [
     url: "https://gimnasio-now.vercel.app"
   },
   {
+    title: "Catálogo y panel para inmobiliarias",
+    description: "Web pública de propiedades en dólares (venta y alquiler) y un panel de gestión con metas del mes, comisión proyectada, mapa de visitas, pipeline de operaciones, conversaciones, llamadas y contactos. Pensado para cualquier país.",
+    tags: "Supabase · Vercel · JavaScript",
+    url: "" // Completar con la URL de Vercel cuando se despliegue inmobiliaria-demo
+  },
+  {
     title: "Web para negocio local",
     description: "Sitio de ejemplo con servicios, ubicación y botón de WhatsApp.",
     tags: "HTML · CSS · JS",

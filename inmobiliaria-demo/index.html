@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Propiedades en venta y alquiler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <strong id="biz">Inmobiliaria</strong>
+      <a href="admin.html">Panel</a>
+    </div>
+  </header>
+  <main class="wrap">
+    <div id="notice"></div>
+    <h1>Encontrá tu próximo lugar</h1>
+    <p class="muted" id="count"></p>
+    <div class="tabs" role="tablist" aria-label="Operación">
+      <button type="button" class="tab on" data-op="">Todas</button>
+      <button type="button" class="tab" data-op="venta">Venta</button>
+      <button type="button" class="tab" data-op="alquiler">Alquiler</button>
+    </div>
+    <div class="filters">
+      <div><label for="f-q">Buscar</label><input id="f-q" type="search" placeholder="Ciudad, barrio o título"></div>
+      <div><label for="f-type">Tipo</label><select id="f-type"><option value="">Todos</option></select></div>
+      <div><label for="f-beds">Dormitorios</label>
+        <select id="f-beds"><option value="">Cualquiera</option><option value="1">1+</option><option value="2">2+</option><option value="3">3+</option><option value="4">4+</option></select></div>
+      <div><label for="f-max">Precio hasta (US$)</label><input id="f-max" type="number" min="0" placeholder="Sin tope"></div>
+      <div>
+        <label for="f-sort">Ordenar</label>
+        <select id="f-sort">
+          <option value="new">Más recientes</option>
+          <option value="price-asc">Precio: menor a mayor</option>
+          <option value="price-desc">Precio: mayor a menor</option>
+          <option value="area-desc">Mayor superficie</option>
+        </select>
+      </div>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
+  <script type="module" src="catalog.js"></script>
+</body>
+</html>
