@@ -22,11 +22,15 @@ const VIEWS = {
   llamadas: { label: "Llamadas", icon: "phone", agency: true, load: async () => ({ render: (await crm()).calls }) },
   contactos: { label: "Contactos", icon: "users", agency: true, load: async () => ({ render: (await crm()).contacts }) },
   configuracion: { label: "Configuración", icon: "settings", agency: true, load: () => import("./views-settings.js") },
-  plataforma: { label: "Plataforma", icon: "building", admin: true, load: () => import("./views-platform.js") },
+  // Herramientas del administrador: no aparece en el menú de la inmobiliaria (solo se abre escribiendo #/plataforma).
+  plataforma: { label: "Plataforma", icon: "building", admin: true, hidden: true, load: () => import("./views-platform.js") },
 };
 
 // Secciones disponibles para este usuario.
 const allowed = () => Object.entries(VIEWS).filter(([, v]) => (v.admin ? session.isAdmin : session.agency));
+
+// Secciones que se muestran en el menú: las ocultas solo aparecen si el usuario no tiene ninguna inmobiliaria.
+const menu = () => allowed().filter(([, v]) => !v.hidden || !session.agency);
 
 const field = (label, input) => h("div", {}, h("label", {}, label), input);
 
@@ -113,7 +117,7 @@ async function shell() {
   logoutBtn.hidden = false;
   brandBlock();
   document.title = `Panel · ${session.agency?.name ?? "Plataforma"}`;
-  $("#nav").replaceChildren(...allowed().map(([name, v]) =>
+  $("#nav").replaceChildren(...menu().map(([name, v]) =>
     h("a", { href: `#/${name}`, "data-view": name }, icon(v.icon), v.label)));
   $("#site-link").href = session.agency ? `./?agency=${encodeURIComponent(session.agency.slug)}` : "./";
   await route();
