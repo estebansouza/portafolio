@@ -1,7 +1,9 @@
-import { listProperties, getSettings, isDemo } from "./data.js";
+import { listProperties, getAgencyBySlug, isDemo } from "./data.js";
 import { usd, filterProperties, sortProperties, place, TYPES } from "./format.js";
 import { h, $, demoNotice } from "./ui.js";
 
+// La inmobiliaria se elige con ?agency=<slug>; sin parámetro se muestra la de demostración.
+const slug = (new URLSearchParams(location.search).get("agency") || "nexo").toLowerCase();
 const state = { props: [], operation: "" };
 
 function render() {
@@ -33,22 +35,28 @@ function render() {
 }
 
 try {
-  const [props, settings] = await Promise.all([listProperties(), getSettings()]);
-  state.props = props;
-  $("#biz").textContent = settings.business_name;
-  document.title = `${settings.business_name} · Propiedades`;
-  const n = demoNotice(isDemo);
-  if (n) $("#notice").append(n);
-  for (const t of TYPES) $("#f-type").append(h("option", { value: t }, t[0].toUpperCase() + t.slice(1)));
-  for (const el of document.querySelectorAll(".filters input, .filters select")) el.addEventListener("input", render);
-  for (const tab of document.querySelectorAll(".tab")) {
-    tab.addEventListener("click", () => {
-      state.operation = tab.dataset.op;
-      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t === tab));
-      render();
-    });
+  const agency = await getAgencyBySlug(slug);
+  if (!agency) {
+    $("#grid").replaceChildren(h("p", { class: "muted" }, "No encontramos esa inmobiliaria."));
+    $("#count").textContent = "";
+  } else {
+    const props = await listProperties({ agency });
+    state.props = props;
+    $("#biz").textContent = agency.name;
+    document.title = `${agency.name} · Propiedades`;
+    const n = demoNotice(isDemo);
+    if (n) $("#notice").append(n);
+    for (const t of TYPES) $("#f-type").append(h("option", { value: t }, t[0].toUpperCase() + t.slice(1)));
+    for (const el of document.querySelectorAll(".filters input, .filters select")) el.addEventListener("input", render);
+    for (const tab of document.querySelectorAll(".tab")) {
+      tab.addEventListener("click", () => {
+        state.operation = tab.dataset.op;
+        document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t === tab));
+        render();
+      });
+    }
+    render();
   }
-  render();
 } catch (e) {
   $("#grid").replaceChildren(h("p", { class: "msg" }, `No se pudo cargar el catálogo: ${e.message}`));
 }

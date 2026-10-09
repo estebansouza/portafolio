@@ -81,13 +81,64 @@ function sb() {
 }
 const must = ({ data, error }) => { if (error) throw error; return data; };
 
+// ---------- Inmobiliarias y sesión del panel ----------
+const DEMO_AGENCY_ID = "demo";
+const AGENCY_COLS = "id,slug,name,whatsapp,country,city,active";
+
+function demoAgency() {
+  const s = { ...DEFAULT_SETTINGS, ...read(LS.settings, {}) };
+  return { id: DEMO_AGENCY_ID, slug: "nexo", name: s.business_name, whatsapp: s.whatsapp, country: s.country, city: s.city, active: true };
+}
+
+// Datos públicos de una inmobiliaria (catálogo y chat). null si no existe o está inactiva.
+export async function getAgencyBySlug(slug) {
+  if (isDemo) return demoAgency();
+  return must(await (await sb()).from("agencies").select(AGENCY_COLS).eq("slug", String(slug)).eq("active", true).maybeSingle());
+}
+
+export async function getAgencyById(id) {
+  if (isDemo) return demoAgency();
+  return must(await (await sb()).from("agencies").select(AGENCY_COLS).eq("id", id).eq("active", true).maybeSingle());
+}
+
+// Nombre y WhatsApp con las claves que usan las pantallas.
+export const publicSettings = (a) => ({ business_name: a.name, whatsapp: a.whatsapp, country: a.country, city: a.city });
+
+// Inmobiliaria con la que trabaja el panel en esta sesión (la fija el panel al iniciar).
+let panelAgency = null;
+export function setPanelAgency(a) { panelAgency = a; }
+const agencyId = () => {
+  if (!panelAgency) throw new Error("No hay una inmobiliaria seleccionada.");
+  return panelAgency.id;
+};
+
+// Quién es el usuario logueado: sus inmobiliarias (con rol) y si administra la plataforma.
+export async function getMyContext() {
+  if (isDemo) return { email: "admin", isAdmin: true, memberships: [{ role: "owner", agency: demoAgency() }] };
+  const client = await sb();
+  const { session } = must(await client.auth.getSession());
+  if (!session) return { email: "", isAdmin: false, memberships: [] };
+  const uid = session.user.id;
+  const [mem, admin] = await Promise.all([
+    client.from("agency_members").select(`role, agencies(${AGENCY_COLS})`).eq("user_id", uid),
+    client.from("platform_admins").select("user_id").eq("user_id", uid).maybeSingle(),
+  ]);
+  return {
+    email: session.user.email ?? "",
+    isAdmin: !!must(admin),
+    memberships: must(mem).filter((m) => m.agencies).map((m) => ({ role: m.role, agency: m.agencies })),
+  };
+}
+
 // ---------- Propiedades ----------
-export async function listProperties({ includeClosed = false } = {}) {
+export async function listProperties({ agency = null, includeClosed = false } = {}) {
   if (isDemo) {
     return demoProps().filter((p) => includeClosed || p.status !== "cerrada")
       .sort((a, b) => b.created_at.localeCompare(a.created_at));
   }
   let q = (await sb()).from("properties").select("*").order("created_at", { ascending: false });
+  const id = agency?.id ?? panelAgency?.id;
+  if (id) q = q.eq("agency_id", id);
   if (!includeClosed) q = q.neq("status", "cerrada");
   return must(await q);
 }
@@ -109,9 +160,9 @@ export async function saveProperty(p) {
     write(LS.props, props);
     return;
   }
-  const { id, created_at, ...fields } = p;
+  const { id, created_at, agency_id, ...fields } = p;
   const table = (await sb()).from("properties");
-  must(id ? await table.update(fields).eq("id", id) : await table.insert(fields));
+  must(id ? await table.update(fields).eq("id", id) : await table.insert({ ...fields, agency_id: agencyId() }));
 }
 
 export async function deleteProperty(id) {
@@ -119,15 +170,24 @@ export async function deleteProperty(id) {
   must(await (await sb()).from("properties").delete().eq("id", id));
 }
 
+// Configuración del panel = datos de la inmobiliaria + sus metas del mes.
 export async function getSettings() {
   if (isDemo) return { ...DEFAULT_SETTINGS, ...read(LS.settings, {}) };
-  const row = must(await (await sb()).from("settings").select("*").eq("id", 1).maybeSingle());
-  return { ...DEFAULT_SETTINGS, ...(row || {}) };
+  const client = await sb();
+  const [a, s] = await Promise.all([
+    client.from("agencies").select("name,whatsapp,country,city").eq("id", agencyId()).maybeSingle(),
+    client.from("agency_settings").select("goal_closings,goal_listings,goal_commission").eq("agency_id", agencyId()).maybeSingle(),
+  ]);
+  const ag = must(a) ?? {};
+  return { ...DEFAULT_SETTINGS, business_name: ag.name ?? DEFAULT_SETTINGS.business_name, whatsapp: ag.whatsapp ?? "", country: ag.country ?? "", city: ag.city ?? "", ...(must(s) ?? {}) };
 }
 
 export async function saveSettings(s) {
   if (isDemo) return write(LS.settings, s);
-  must(await (await sb()).from("settings").upsert({ id: 1, ...s }));
+  const client = await sb();
+  must(await client.from("agencies").update({ name: s.business_name, whatsapp: s.whatsapp, country: s.country, city: s.city }).eq("id", agencyId()));
+  must(await client.from("agency_settings").update({ goal_closings: s.goal_closings, goal_listings: s.goal_listings, goal_commission: s.goal_commission }).eq("agency_id", agencyId()));
+  if (panelAgency) panelAgency = { ...panelAgency, name: s.business_name, whatsapp: s.whatsapp, country: s.country, city: s.city };
 }
 
 export async function uploadPhoto(file) {
@@ -140,46 +200,42 @@ export async function uploadPhoto(file) {
     });
   }
   const client = await sb();
-  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-  const path = `${crypto.randomUUID()}.${ext}`;
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const path = `${agencyId()}/${crypto.randomUUID()}.${ext || "jpg"}`;
   must(await client.storage.from("property-photos").upload(path, file, { contentType: file.type }));
   return client.storage.from("property-photos").getPublicUrl(path).data.publicUrl;
 }
 
 // ---------- Consultas (leads) ----------
-// kind "whatsapp": solo un click de interés (sin datos personales).
-// kind "consulta": formulario con nombre y contacto que el visitante envía a propósito.
-export async function addLead({ property, kind, name = "", contact = "", message = "" }) {
-  const row = {
-    property_id: property.id,
-    property_label: String(property.title).slice(0, 120),
-    kind,
-    name: name.slice(0, 80),
-    contact: contact.slice(0, 120),
-    message: message.slice(0, 1000),
-    status: "nuevo",
-  };
-  if (isDemo) {
-    const all = demoLeads();
-    all.unshift({ ...row, id: newId(), created_at: new Date().toISOString() });
-    write(LS.leads, all.slice(0, 500));
-    return;
+// Click en "Consultar por WhatsApp" (sin datos personales). Nunca debe romper la página.
+export async function logWhatsappClick(property) {
+  try {
+    if (isDemo) {
+      const all = demoLeads();
+      all.unshift({
+        id: newId(), property_id: property.id, property_label: String(property.title).slice(0, 120), kind: "whatsapp",
+        name: "", contact: "", message: "", messages: [], status: "nuevo", created_at: new Date().toISOString(),
+      });
+      write(LS.leads, all.slice(0, 500));
+      return;
+    }
+    must(await (await sb()).rpc("log_whatsapp_click", { p_property_id: property.id }));
+  } catch (e) {
+    console.warn("No se pudo registrar el click", e);
   }
-  // Insert sin pedir la fila de vuelta: el público no tiene permiso de lectura.
-  const { error } = await (await sb()).from("leads").insert(row);
-  if (error) throw error;
 }
 
 // Guarda (crea o actualiza) la conversación de chat de un visitante. status: "nuevo" | "atencion".
-// Si falla no debe romper el chat: el visitante igual recibe su respuesta.
-export async function saveChat({ session, property, name = "", contact = "", messages, status }) {
+// property puede ser null (chat general de la inmobiliaria). Si falla no rompe el chat.
+export async function saveChat({ session, agency, property = null, name = "", contact = "", messages, status }) {
+  const label = property ? String(property.title).slice(0, 120) : "Consulta general";
   try {
     if (isDemo) {
       const all = demoLeads();
       const i = all.findIndex((l) => l.session_id === session);
       const message = messages.find((m) => m.role === "user")?.text.slice(0, 1000) ?? "";
       const row = {
-        session_id: session, property_id: property.id, property_label: String(property.title).slice(0, 120), kind: "chat",
+        session_id: session, property_id: property?.id ?? null, property_label: label, kind: "chat",
         name: name.slice(0, 80), contact: contact.slice(0, 120), message, messages, status,
       };
       if (i >= 0) all[i] = { ...all[i], ...row };
@@ -188,7 +244,7 @@ export async function saveChat({ session, property, name = "", contact = "", mes
       return;
     }
     must(await (await sb()).rpc("save_chat", {
-      p_session: session, p_property_id: property.id, p_label: String(property.title).slice(0, 120),
+      p_session: session, p_agency: agency?.id ?? null, p_property_id: property?.id ?? null, p_label: label,
       p_name: name.slice(0, 80), p_contact: contact.slice(0, 120), p_messages: messages, p_status: status,
     }));
   } catch (e) {
@@ -198,7 +254,7 @@ export async function saveChat({ session, property, name = "", contact = "", mes
 
 export async function listLeads(limit = 200) {
   if (isDemo) return demoLeads().slice(0, limit);
-  return must(await (await sb()).from("leads").select("*").order("created_at", { ascending: false }).limit(limit));
+  return must(await (await sb()).from("leads").select("*").eq("agency_id", agencyId()).order("created_at", { ascending: false }).limit(limit));
 }
 
 export async function updateLead(id, patch) {
@@ -209,6 +265,32 @@ export async function updateLead(id, patch) {
 export async function deleteLead(id) {
   if (isDemo) return write(LS.leads, demoLeads().filter((l) => l.id !== id));
   must(await (await sb()).from("leads").delete().eq("id", id));
+}
+
+// ---------- Equipo y plataforma ----------
+const noDemo = () => { throw new Error("No disponible en modo demo."); };
+
+export async function listMembers(agency) {
+  if (isDemo) return [{ user_id: "demo", email: "admin", role: "owner" }];
+  return must(await (await sb()).rpc("list_members", { p_agency: agency }));
+}
+export async function addMember(agency, email, role = "owner") {
+  if (isDemo) return noDemo();
+  must(await (await sb()).rpc("add_member", { p_agency: agency, p_email: email, p_role: role }));
+}
+export async function removeMember(agency, user) {
+  if (isDemo) return noDemo();
+  must(await (await sb()).rpc("remove_member", { p_agency: agency, p_user: user }));
+}
+export async function listAgencies() {
+  if (isDemo) return [demoAgency()];
+  return must(await (await sb()).from("agencies").select(AGENCY_COLS).order("created_at", { ascending: true }));
+}
+export async function createAgency({ slug, name, whatsapp = "", country = "", city = "" }) {
+  if (isDemo) return noDemo();
+  return must(await (await sb()).rpc("admin_create_agency", {
+    p_slug: slug, p_name: name, p_whatsapp: whatsapp, p_country: country, p_city: city,
+  }));
 }
 
 // ---------- CRM: contactos, operaciones (pipeline), llamadas, visitas ----------
@@ -298,11 +380,11 @@ export function collection(name) {
   return {
     async list() {
       if (isDemo) return all().sort((a, b) => b.created_at.localeCompare(a.created_at));
-      return must(await (await sb()).from(name).select("*").order("created_at", { ascending: false }).limit(1000));
+      return must(await (await sb()).from(name).select("*").eq("agency_id", agencyId()).order("created_at", { ascending: false }).limit(1000));
     },
     async add(row) {
       if (isDemo) return write(key, [{ ...row, id: newId(), created_at: new Date().toISOString() }, ...all()]);
-      must(await (await sb()).from(name).insert(row));
+      must(await (await sb()).from(name).insert({ ...row, agency_id: agencyId() }));
     },
     async update(id, patch) {
       if (isDemo) return write(key, all().map((r) => (r.id === id ? { ...r, ...patch } : r)));

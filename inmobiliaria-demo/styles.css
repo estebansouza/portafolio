@@ -178,3 +178,15 @@ small { color: var(--muted); }
 .convo summary { cursor: pointer; color: var(--accent); font-weight: 500; }
 .transcript { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .convo.atencion { border-left: 4px solid var(--danger); }
+
+/* ---------- Chat embebido (widget) ---------- */
+body.embed { background: #fff; display: flex; flex-direction: column; height: 100vh; }
+.embed-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 14px; background: var(--accent); color: var(--accent-ink); }
+.embed-head small { color: #d9eadf; }
+body.embed main { flex: 1; min-height: 0; display: flex; }
+.chat-compact { display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; flex: 1; min-height: 0; width: 100%; }
+.chat-compact .form-grid { grid-template-columns: 1fr 1fr; }
+.chat-compact .chat-log { flex: 1; max-height: none; min-height: 0; }
+.chat-compact input { padding: 8px 10px; }
+.brand-pick { display: block; margin-top: 6px; font-size: .8rem; padding: 4px 6px; }
+.code { display: block; background: #1f2a24; color: #e8f0eb; padding: 12px; border-radius: 8px; font: .8rem/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; white-space: pre; margin: 8px 0; }

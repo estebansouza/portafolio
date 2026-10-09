@@ -35,10 +35,20 @@ export function fallbackReply(p, text) {
   return out("No tengo ese dato a mano. Dejame tu nombre y un teléfono o email y un asesor te responde a la brevedad.", true);
 }
 
+// Respaldo sin IA cuando el visitante escribe a la inmobiliaria en general (sin propiedad concreta).
+export function generalReply(agencyName, text) {
+  const t = norm(text);
+  const out = (reply, handoff = false) => ({ reply, handoff, source: "respaldo" });
+  if (has(t, ["hola", "buen", "consulta", "info"]) && t.split(" ").length <= 4) {
+    return out(`¡Hola! Soy el asistente virtual de ${agencyName}. Contame qué estás buscando (comprar o alquilar, zona, dormitorios, presupuesto) y te ayudo.`);
+  }
+  return out("Gracias por contarme. Dejame tu nombre y un teléfono o email y un asesor te envía opciones que se ajusten a lo que buscás.", true);
+}
+
 const PUBLIC_FIELDS = ["title", "operation", "type", "price", "bedrooms", "bathrooms", "garage", "area_m2", "country", "city", "neighborhood", "status", "description"];
 
 // messages: [{ role: "user" | "assistant", text }]; el último es del visitante.
-export async function askAssistant({ property, businessName, messages }) {
+export async function askAssistant({ property = null, agency = null, businessName, messages }) {
   const last = messages[messages.length - 1]?.text ?? "";
   try {
     const res = await fetch("/api/chat", {
@@ -46,7 +56,8 @@ export async function askAssistant({ property, businessName, messages }) {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         business_name: businessName,
-        property: Object.fromEntries(PUBLIC_FIELDS.map((k) => [k, property[k]])),
+        agency: agency?.slug,
+        ...(property ? { property: Object.fromEntries(PUBLIC_FIELDS.map((k) => [k, property[k]])) } : {}),
         messages: messages.slice(-12).map(({ role, text }) => ({ role, text })),
       }),
     });
@@ -55,6 +66,6 @@ export async function askAssistant({ property, businessName, messages }) {
     if (typeof data.reply !== "string" || !data.reply) throw new Error("respuesta vacía");
     return { reply: data.reply, handoff: !!data.handoff, source: "ia" };
   } catch {
-    return fallbackReply(property, last);
+    return property ? fallbackReply(property, last) : generalReply(businessName, last);
   }
 }

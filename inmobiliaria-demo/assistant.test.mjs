@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { fallbackReply, askAssistant } from "./assistant.js";
+import { fallbackReply, generalReply, askAssistant } from "./assistant.js";
 
 const p = { title: "Casa con jardín", operation: "venta", type: "casa", price: 285000, bedrooms: 3, bathrooms: 2, garage: 0, area_m2: 210, city: "Montevideo", neighborhood: "Carrasco", country: "Uruguay", status: "disponible", description: "x" };
 
@@ -69,5 +69,45 @@ assert.deepEqual(handler.cleanMessages([{ role: "assistant", text: "a" }, { role
 globalThis.fetch = async () => ({ ok: false, status: 500 });
 res = mkRes(); await handler(req({ headers: { host: "site.test", "x-forwarded-for": "2.2.2.2" } }), res);
 assert.equal(res.code, 502);
+
+// ---- chat general de la inmobiliaria (sin propiedad) ----
+assert.equal(generalReply("Nexo", "hola").handoff, false);
+assert.match(generalReply("Nexo", "Hola").reply, /Nexo/);
+assert.equal(generalReply("Nexo", "busco un apartamento de 2 dormitorios en Pocitos hasta 150 mil").handoff, true);
+
+let body;
+globalThis.fetch = async (url, init) => { body = JSON.parse(init.body); return { ok: true, json: async () => ({ reply: "ok", handoff: false }) }; };
+await askAssistant({ agency: { slug: "costa-sur" }, businessName: "Costa Sur", messages: [{ role: "user", text: "hola" }] });
+assert.equal(body.agency, "costa-sur");
+assert.equal("property" in body, false, "sin propiedad no se envía property");
+globalThis.fetch = async () => { throw new Error("offline"); };
+r = await askAssistant({ agency: { slug: "x" }, businessName: "Costa Sur", messages: [{ role: "user", text: "busco casa" }] });
+assert.deepEqual([r.source, r.handoff], ["respaldo", true]);
+
+// ---- api/chat.js en modo inmobiliaria: arma el catálogo desde Supabase ----
+const calls = [];
+let anthropicBody;
+globalThis.fetch = async (url, init) => {
+  calls.push(String(url));
+  if (String(url).includes("/rest/v1/agencies?")) return { ok: true, json: async () => (String(url).includes("slug=eq.fantasma") ? [] : [{ id: "a1", name: "Costa Sur", city: "Punta del Este", country: "Uruguay" }]) };
+  if (String(url).includes("/rest/v1/properties?")) return { ok: true, json: async () => [{ id: "p1", title: "Chalet frente al mar", operation: "venta", type: "casa", price: 640000, bedrooms: 5, bathrooms: 4, garage: 2, area_m2: 380, city: "Punta del Este", neighborhood: "Manantiales", status: "disponible", description: "x" }] };
+  anthropicBody = JSON.parse(init.body);
+  return { ok: true, json: async () => ({ content: [{ type: "text", text: "Te recomiendo el Chalet." }] }) };
+};
+const areq = (agency, over = {}) => req({ headers: { host: "site.test", "x-forwarded-for": "3.3.3.3", "x-forwarded-proto": "https" }, body: { agency, messages: [{ role: "user", text: "busco casa en Manantiales" }] }, ...over });
+res = mkRes(); await handler(areq("costa-sur"), res);
+assert.equal(res.code, 200);
+assert.deepEqual(res.body, { reply: "Te recomiendo el Chalet.", handoff: false });
+assert.match(anthropicBody.system, /Costa Sur/);
+assert.match(anthropicBody.system, /Chalet frente al mar/);
+assert.ok(anthropicBody.system.includes("https://site.test/property#p1"), "incluye el link a la ficha");
+assert.ok(calls.some((u) => u.includes("agency_id=eq.a1")), "filtra propiedades por inmobiliaria");
+const before = calls.length;
+res = mkRes(); await handler(areq("costa-sur"), res);
+assert.equal(calls.filter((u) => u.includes("/rest/v1/")).length, 2, "el catálogo se cachea (2 consultas en total)");
+assert.ok(calls.length > before);
+res = mkRes(); await handler(areq("fantasma"), res); assert.equal(res.code, 404);
+res = mkRes(); await handler(areq("Mal Slug!"), res); assert.equal(res.code, 400, "slug inválido");
+res = mkRes(); await handler(areq("../etc"), res); assert.equal(res.code, 400, "slug con path traversal");
 
 console.log("assistant.test.mjs: ok");
