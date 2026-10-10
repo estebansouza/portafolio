@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, isDemo, resetDemo, listMembers, addMember, removeMember } from "./data.js";
+import { getSettings, saveSettings, isDemo, resetDemo, listMembers, addMember, removeMember, getWhatsapp } from "./data.js";
 import { session, isOwner } from "./session.js";
 import { h, formPanel, demoNotice } from "./ui.js";
 
@@ -23,6 +23,16 @@ export function installPanel(agency) {
     h("p", { class: "muted" },
       "Catálogo público: ", h("a", { href: catalog, target: "_blank", rel: "noopener" }, catalog),
       h("br"), "Probar el chat: ", h("a", { href: chat, target: "_blank", rel: "noopener" }, chat)));
+}
+
+// Estado del WhatsApp automático (el número lo conecta el administrador de la plataforma).
+async function whatsappPanel(agency) {
+  const wa = await getWhatsapp(agency.id);
+  return h("div", { class: "card-box" },
+    h("h3", { class: "sec" }, "WhatsApp automático"),
+    wa
+      ? h("p", {}, h("span", { class: "badge disponible" }, "conectado"), ` ${wa.display_phone || "Número conectado"}. La IA responde al instante a los mensajes que reciba ese número; si hace falta una persona, la conversación queda en "Requieren atención".`)
+      : h("p", { class: "muted" }, h("span", { class: "badge" }, "no conectado"), " Cuando se conecte el número de WhatsApp de la inmobiliaria, la IA va a responder ahí los mensajes automáticamente. Pedíselo al administrador de la plataforma."));
 }
 
 async function teamPanel(root) {
@@ -80,6 +90,7 @@ export async function render(root) {
     h("div", { class: "page-head" }, h("h1", {}, "Configuración")),
     demoNotice(isDemo), form, ok,
     installPanel(session.agency),
+    !isDemo ? await whatsappPanel(session.agency) : null,
     !isDemo && isOwner() ? await teamPanel(root) : null,
     isDemo
       ? h("div", { class: "card-box" },

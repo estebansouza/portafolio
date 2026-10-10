@@ -282,6 +282,21 @@ export async function removeMember(agency, user) {
   if (isDemo) return noDemo();
   must(await (await sb()).rpc("remove_member", { p_agency: agency, p_user: user }));
 }
+// Número de WhatsApp conectado de una inmobiliaria (o null). El administrador ve todos si no se indica.
+export async function getWhatsapp(agency) {
+  if (isDemo) return null;
+  return must(await (await sb()).from("agency_whatsapp").select("agency_id,phone_number_id,display_phone").eq("agency_id", agency).maybeSingle());
+}
+export async function listWhatsapp() {
+  if (isDemo) return [];
+  return must(await (await sb()).from("agency_whatsapp").select("agency_id,phone_number_id,display_phone"));
+}
+// Conecta el número (o lo desconecta si phoneNumberId viene vacío). Solo el administrador de la plataforma.
+export async function setWhatsapp(agency, phoneNumberId, display = "") {
+  if (isDemo) return noDemo();
+  must(await (await sb()).rpc("admin_set_whatsapp", { p_agency: agency, p_phone_number_id: phoneNumberId, p_display: display }));
+}
+
 export async function listAgencies() {
   if (isDemo) return [demoAgency()];
   return must(await (await sb()).from("agencies").select(AGENCY_COLS).order("created_at", { ascending: true }));

@@ -54,9 +54,9 @@ export async function conversations(root, only = "") {
     const badge = { nuevo: ["reservada", "nuevo"], atencion: ["cerrada", "requiere atención"], respondido: ["disponible", "respondido"] }[l.status] ?? ["", l.status];
     return h("article", { class: `convo ${l.status}` },
       h("div", { class: "convo-head" },
-        h("strong", {}, l.name || (l.kind === "chat" ? "Visitante (chat)" : "Visitante (click en WhatsApp)")),
+        h("strong", {}, l.name || (l.channel === "whatsapp" ? "Contacto de WhatsApp" : l.kind === "chat" ? "Visitante (chat)" : "Visitante (click en WhatsApp)")),
         h("span", { class: `badge ${badge[0]}` }, badge[1]),
-        l.kind === "chat" ? h("span", { class: "badge" }, "chat con IA") : null,
+        l.kind === "chat" ? h("span", { class: "badge" }, l.channel === "whatsapp" ? "WhatsApp · IA" : "chat web · IA") : null,
         h("small", { class: "muted" }, relTime(l.created_at))),
       h("div", { class: "muted" }, `${l.property_label}${l.contact ? ` · ${l.contact}` : ""}`),
       thread.length

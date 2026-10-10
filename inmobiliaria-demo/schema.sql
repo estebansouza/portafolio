@@ -317,3 +317,40 @@ grant execute on function public.admin_create_agency(text, text, text, text, tex
 -- ---------- Después de crear tu usuario en Authentication ----------
 --   insert into public.platform_admins (user_id) select id from auth.users where email = 'vos@ejemplo.com';
 --   select public.add_member(...)  -- o desde el panel (Plataforma > Agregar al equipo)
+
+-- ---------- WhatsApp automático ----------
+-- Canal de cada conversación (web o WhatsApp).
+alter table public.leads add column if not exists channel text not null default 'web'
+  check (channel in ('web', 'whatsapp'));
+
+-- Número de WhatsApp Business de cada inmobiliaria. phone_number_id es el identificador que Meta
+-- envía en cada mensaje entrante; el servidor lo usa para saber a qué inmobiliaria pertenece.
+create table if not exists public.agency_whatsapp (
+  agency_id uuid primary key references public.agencies (id) on delete cascade,
+  phone_number_id text not null unique check (char_length(phone_number_id) between 5 and 40),
+  display_phone text not null default '' check (char_length(display_phone) <= 30),
+  created_at timestamptz not null default now()
+);
+alter table public.agency_whatsapp enable row level security;
+-- El equipo ve si su número está conectado; el administrador de plataforma ve todos.
+-- No hay políticas de escritura: se configura con admin_set_whatsapp (el webhook usa la clave de servicio).
+create policy "members read whatsapp" on public.agency_whatsapp
+  for select to authenticated using (public.is_member(agency_id) or public.is_platform_admin());
+
+-- Conecta (o cambia) el número de una inmobiliaria. Con p_phone_number_id vacío lo desconecta.
+create or replace function public.admin_set_whatsapp(p_agency uuid, p_phone_number_id text, p_display text default '')
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.is_platform_admin() then raise exception 'no autorizado'; end if;
+  if coalesce(trim(p_phone_number_id), '') = '' then
+    delete from public.agency_whatsapp where agency_id = p_agency;
+  else
+    insert into public.agency_whatsapp (agency_id, phone_number_id, display_phone)
+    values (p_agency, trim(p_phone_number_id), trim(coalesce(p_display, '')))
+    on conflict (agency_id) do update
+      set phone_number_id = excluded.phone_number_id, display_phone = excluded.display_phone;
+  end if;
+end;
+$$;
+revoke all on function public.admin_set_whatsapp(uuid, text, text) from public, anon, authenticated;
+grant execute on function public.admin_set_whatsapp(uuid, text, text) to authenticated;

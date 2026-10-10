@@ -2,3 +2,4 @@ schema.sql
 seed.sql
 seed-demo.sql
 *.test.mjs
+*.md

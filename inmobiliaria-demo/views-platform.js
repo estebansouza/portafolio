@@ -1,12 +1,13 @@
 // Panel interno del administrador de la plataforma: alta de inmobiliarias y de sus dueños.
-import { listAgencies, createAgency, addMember } from "./data.js";
+import { listAgencies, createAgency, addMember, listWhatsapp, setWhatsapp } from "./data.js";
 import { widgetSnippet } from "./views-settings.js";
 import { h, formPanel } from "./ui.js";
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{1,38}[a-z0-9]$/;
 
 export async function render(root) {
-  const agencies = await listAgencies();
+  const [agencies, numbers] = await Promise.all([listAgencies(), listWhatsapp()]);
+  const waOf = (id) => numbers.find((n) => n.agency_id === id);
   const again = () => render(root);
 
   const newAgency = formPanel({
@@ -41,13 +42,29 @@ export async function render(root) {
     },
   });
 
+  const connectWa = formPanel({
+    title: "Conectar WhatsApp de una inmobiliaria",
+    submitLabel: "Guardar número",
+    fields: [
+      { key: "agency", label: "Inmobiliaria", options: agencies.map((a) => [a.id, `${a.name} (${a.slug})`]) },
+      { key: "phone", label: "Phone number ID (de Meta)", required: false },
+      { key: "display", label: "Número visible (ej. +598 99 123 456)" },
+    ],
+    onSubmit: async (v) => {
+      await setWhatsapp(v.agency, v.phone, v.display);
+      alert(v.phone ? "Número conectado." : "Número desconectado (dejaste el Phone number ID vacío).");
+      again();
+    },
+  });
+
   root.replaceChildren(
     h("div", { class: "page-head" }, h("h1", {}, "Plataforma")),
     h("div", { class: "card-box" },
       h("h3", { class: "sec" }, `Inmobiliarias (${agencies.length})`),
-      h("table", {}, h("thead", {}, h("tr", {}, ["Nombre", "Identificador", "Ciudad", "Catálogo"].map((t) => h("th", {}, t)))),
+      h("table", {}, h("thead", {}, h("tr", {}, ["Nombre", "Identificador", "Ciudad", "WhatsApp", "Catálogo"].map((t) => h("th", {}, t)))),
         h("tbody", {}, agencies.map((a) => h("tr", {},
           h("td", {}, a.name), h("td", {}, a.slug), h("td", {}, [a.city, a.country].filter(Boolean).join(", ")),
+          h("td", {}, waOf(a.id) ? `${waOf(a.id).display_phone || "conectado"} (${waOf(a.id).phone_number_id})` : "—"),
           h("td", {}, h("a", { href: `./?agency=${encodeURIComponent(a.slug)}`, target: "_blank", rel: "noopener" }, "Ver"))))))),
     h("div", { class: "card-box" },
       h("h3", { class: "sec" }, "Cómo dar de alta a un cliente"),
@@ -56,7 +73,7 @@ export async function render(root) {
         h("li", {}, "En Supabase, Authentication > Users, creá el usuario del dueño (Add user, con Auto Confirm)."),
         h("li", {}, "Agregalo a la inmobiliaria por su email."),
         h("li", {}, "En Configuración de esa inmobiliaria está el código del chat para pegar en su web."))),
-    newAgency, addOwner,
+    newAgency, addOwner, connectWa,
     agencies[0]
       ? h("div", { class: "card-box" },
           h("h3", { class: "sec" }, "Ejemplo de código del widget"),

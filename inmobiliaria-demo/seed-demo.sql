@@ -99,3 +99,12 @@ join (values
 ) as v(title, kind, name, contact, message, status, mins, messages) on true
 join public.properties p on p.agency_id = a.id and p.title = v.title
 where a.slug = 'nexo' and not exists (select 1 from public.leads l where l.agency_id = a.id);
+
+-- Conversación de ejemplo recibida por WhatsApp.
+insert into public.leads (agency_id, session_id, property_id, property_label, kind, channel, name, contact, message, messages, status, created_at)
+select a.id, gen_random_uuid(), null, 'Consulta por WhatsApp', 'chat', 'whatsapp', 'Lucas Pereira', '59899765432',
+  'Hola, busco un apartamento de 2 dormitorios para alquilar',
+  '[{"role":"user","text":"Hola, busco un apartamento de 2 dormitorios para alquilar"},{"role":"assistant","text":"¡Hola Lucas! Tenemos el Apartamento luminoso cerca del centro, en Cordón: 2 dormitorios, 1 baño, US$ 750 por mes. Mirala acá y decime si querés coordinar una visita."},{"role":"user","text":"Perfecto, ¿puedo verlo mañana a la tarde?"},{"role":"assistant","text":"¡Claro! Ya avisé al equipo para que te confirme el horario por este mismo chat."}]'::jsonb,
+  'atencion', now() - interval '25 minutes'
+from public.agencies a
+where a.slug = 'nexo' and not exists (select 1 from public.leads l where l.agency_id = a.id and l.channel = 'whatsapp');
