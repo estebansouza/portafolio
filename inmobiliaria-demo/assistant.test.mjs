@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
-import { fallbackReply, generalReply, askAssistant } from "./assistant.js";
+import { fallbackReply, generalReply, askAssistant, extractContact } from "./assistant.js";
 
 const p = { title: "Casa con jardín", operation: "venta", type: "casa", price: 285000, bedrooms: 3, bathrooms: 2, garage: 0, area_m2: 210, city: "Montevideo", neighborhood: "Carrasco", country: "Uruguay", status: "disponible", description: "x" };
 
@@ -109,5 +109,15 @@ assert.ok(calls.length > before);
 res = mkRes(); await handler(areq("fantasma"), res); assert.equal(res.code, 404);
 res = mkRes(); await handler(areq("Mal Slug!"), res); assert.equal(res.code, 400, "slug inválido");
 res = mkRes(); await handler(areq("../etc"), res); assert.equal(res.code, 400, "slug con path traversal");
+
+// ---- contacto escrito en el chat ----
+assert.equal(extractContact("Soy Ana, mi cel es 099 123 456."), "099 123 456");
+assert.equal(extractContact("mi número: +598 99 123 456"), "+598 99 123 456");
+assert.equal(extractContact("escribime a ana.perez@correo.com, gracias"), "ana.perez@correo.com");
+assert.equal(extractContact("Escribime a ana@correo.com."), "ana@correo.com");
+assert.equal(extractContact("quiero visitarla el sábado a las 10"), "", "una hora no es un teléfono");
+assert.equal(extractContact("tiene 3 dormitorios y 200 m2"), "");
+assert.equal(extractContact(""), "");
+assert.equal(extractContact(undefined), "");
 
 console.log("assistant.test.mjs: ok");

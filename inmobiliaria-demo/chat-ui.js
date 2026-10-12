@@ -2,7 +2,7 @@
 // Responde al instante y, si hace falta una persona, deja la conversación marcada
 // "requiere atención" en el panel de la inmobiliaria.
 import { saveChat } from "./data.js";
-import { askAssistant } from "./assistant.js";
+import { askAssistant, extractContact } from "./assistant.js";
 import { h } from "./ui.js";
 
 // agency: fila pública de la inmobiliaria; property: opcional (si falta, es un chat general).
@@ -46,6 +46,8 @@ export function createChat({ agency, property = null, compact = false }) {
     input.value = "";
     send.disabled = true;
     push("user", text);
+    if (!contact.value.trim()) contact.value = extractContact(text);
+    if (contact.value.trim()) hint.hidden = true;
     const typing = h("div", { class: "bubble bot typing" }, "Escribiendo…");
     log.append(typing);
     log.scrollTop = log.scrollHeight;

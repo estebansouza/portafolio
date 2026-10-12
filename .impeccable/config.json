@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "tight-leading",
+        "value": "*",
+        "files": [
+          "inmobiliaria-demo/demo.html"
+        ],
+        "createdAt": "2026-10-12T19:22:04.386Z",
+        "reason": "assistant decision, user did not review: tight leading (0.94-1.0) on display headlines at 50-115px is intentional typography; body text is 1.6 and the only multi-line display paragraph was raised to 1.3"
+      }
+    ]
+  }
+}

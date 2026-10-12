@@ -2,6 +2,15 @@
 // disponible o no tiene API key, usa respuestas de respaldo basadas en reglas simples.
 import { usd, place, norm } from "./format.js";
 
+// Si el visitante escribe su email o teléfono en el chat, lo tomamos como dato de contacto.
+export function extractContact(text) {
+  const t = String(text ?? "");
+  const email = t.match(/[^\s@<>()]+@[^\s@<>()]+\.[^\s@<>()]+/);
+  if (email) return email[0].replace(/[.,;:]+$/, "");
+  const phone = t.match(/\+?\d[\d\s().-]{6,}\d/);
+  return phone && phone[0].replace(/\D/g, "").length >= 8 ? phone[0].trim() : "";
+}
+
 const has = (t, words) => words.some((w) => t.includes(w));
 
 // Respuesta sin IA a partir de los datos de la propiedad. handoff = que intervenga una persona.
