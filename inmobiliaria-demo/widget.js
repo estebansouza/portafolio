@@ -1,6 +1,7 @@
 /* Widget de chat para la web de una inmobiliaria. Instalación (una línea, antes de </body>):
  *   <script src="https://TU-SITIO/widget.js" data-agency="mi-inmobiliaria" async></script>
  * Opciones: data-color="#1581c4"  data-label="Consultanos"  data-position="left" | "right"
+ *             data-open-after="7"  (abre el chat solo a los 7 segundos, una vez, si la persona no lo abrió antes)
  * El chat corre en un iframe de nuestro dominio, así no choca con los estilos ni los scripts de la web. */
 (function () {
   var script = document.currentScript;
@@ -18,7 +19,8 @@
 
   var frame = document.createElement("iframe");
   frame.title = "Chat con la inmobiliaria";
-  frame.src = base + "chat?agency=" + encodeURIComponent(script.dataset.agency);
+  frame.src = base + "chat?agency=" + encodeURIComponent(script.dataset.agency) +
+    (script.dataset.color ? "&color=" + encodeURIComponent(color) : "");
   frame.loading = "lazy";
   frame.style.cssText = "display:none;width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 96px));" +
     "border:0;border-radius:14px;background:#fff;box-shadow:0 12px 40px rgba(0,0,0,.28);margin-bottom:12px";
@@ -32,12 +34,18 @@
     "border-radius:999px;background:" + color + ";color:#fff;font:600 15px system-ui,sans-serif;cursor:pointer;" +
     "box-shadow:0 6px 20px rgba(0,0,0,.25)";
 
+  var touched = false;
   btn.addEventListener("click", function () {
+    touched = true;
     var open = frame.style.display === "none";
     frame.style.display = open ? "block" : "none";
     btn.setAttribute("aria-expanded", String(open));
     btn.textContent = open ? "✕ Cerrar" : "💬 " + label;
   });
+  var openAfter = parseFloat(script.dataset.openAfter);
+  if (openAfter > 0) {
+    setTimeout(function () { if (!touched && frame.style.display === "none") btn.click(); touched = false; }, openAfter * 1000);
+  }
 
   root.appendChild(frame);
   root.appendChild(btn);

@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Costa Sur Inmobiliaria · Punta del Este (demostración)</title>
+  <meta name="description" content="Sitio de demostración: así se ve el asistente de consultas instalado en la web de una inmobiliaria.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+  <style>
+    :root {
+      --pine: #0f2f2a;
+      --sea: #0f4c4a;
+      --glass: #bfe3d8;
+      --salt: #f5f7f4;
+      --dune: #ead9b8;
+      --flag: #d63a26;
+      --muted: #52645f;
+      --line: #d5ddd8;
+      --serif: "Instrument Serif", Georgia, serif;
+      --sans: "Hanken Grotesk", system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--salt); color: var(--pine); font: 400 1.0625rem/1.6 var(--sans); }
+    a { color: inherit; }
+    :focus-visible { outline: 3px solid var(--flag); outline-offset: 3px; }
+    .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+    h1, h2, h3, p { margin: 0; }
+
+    /* Franja de demostración (no es parte de la web de la inmobiliaria) */
+    .demo-bar { background: #151a19; color: #e4ebe8; font-size: .9rem; }
+    .demo-bar .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: center; justify-content: space-between; padding-top: 10px; padding-bottom: 10px; }
+    .demo-bar strong { color: #fff; font-weight: 600; }
+    .demo-bar details { position: relative; }
+    .demo-bar summary { cursor: pointer; color: #ffd9d2; font-weight: 500; }
+    .demo-bar .snippet { margin-top: 10px; background: #0c0f0f; border: 1px solid #333c39; border-radius: 6px; padding: 12px 14px; font: .8rem/1.5 ui-monospace, Consolas, monospace; overflow-x: auto; white-space: pre; color: #d7e5df; }
+    .demo-bar .try { width: 100%; color: #b9c8c2; }
+    .demo-bar .try q { color: #fff; }
+
+    /* Cabecera */
+    .site-head { border-bottom: 1px solid var(--line); }
+    .site-head .wrap { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding-top: 22px; padding-bottom: 18px; }
+    .logo { font: 400 1.9rem/1 var(--serif); text-decoration: none; letter-spacing: -.01em; }
+    .logo span { font: 500 .85rem var(--sans); color: var(--muted); margin-left: 8px; }
+    .site-head nav { display: flex; gap: 28px; font-weight: 500; }
+    .site-head nav a { text-decoration: none; padding: 4px 0; border-bottom: 2px solid transparent; }
+    .site-head nav a:hover { border-color: var(--flag); }
+
+    /* Portada */
+    .hero { padding: clamp(40px, 7vw, 88px) 0 clamp(48px, 8vw, 104px); }
+    .hero .wrap { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: clamp(32px, 6vw, 80px); align-items: end; }
+    .hero h1 { font: 400 clamp(3.1rem, 8.4vw, 7.2rem)/.94 var(--serif); letter-spacing: -.02em; max-width: 11ch; }
+    .hero p.lead { margin-top: 28px; max-width: 38ch; font-size: 1.2rem; color: var(--muted); }
+    .hero .actions { margin-top: 36px; display: flex; flex-wrap: wrap; gap: 12px; }
+    .btn { display: inline-block; padding: 14px 24px; border-radius: 999px; font: 600 1rem var(--sans); text-decoration: none; cursor: pointer; border: 2px solid var(--pine); background: transparent; color: var(--pine); }
+    .btn.main { background: var(--flag); border-color: var(--flag); color: #fff; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn { transition: transform .15s; }
+    .arch { border-radius: 999px 999px 0 0; overflow: hidden; background: var(--glass); aspect-ratio: 4 / 5.2; }
+    .arch svg { display: block; width: 100%; height: 100%; }
+    .sun { transform-origin: center; animation: rise 2.2s cubic-bezier(.2, .7, .2, 1) both; }
+    .glint { animation: glint 2.2s ease-out .5s both; }
+    @keyframes rise { from { transform: translateY(78px); } to { transform: none; } }
+    @keyframes glint { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Propiedades: índice en filas */
+    section.block { padding: clamp(48px, 7vw, 88px) 0; border-top: 1px solid var(--line); }
+    .block h2 { font: 400 clamp(2.2rem, 5vw, 3.6rem)/1 var(--serif); letter-spacing: -.01em; }
+    .block .intro { margin-top: 14px; color: var(--muted); max-width: 52ch; }
+    .tools { margin-top: 28px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .tools button { font: 500 .95rem var(--sans); padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--pine); cursor: pointer; }
+    .tools button[aria-pressed="true"] { background: var(--pine); border-color: var(--pine); color: #fff; }
+    .rows { list-style: none; margin: 18px 0 0; padding: 0; border-top: 1px solid var(--pine); }
+    .rows li { display: grid; grid-template-columns: 112px minmax(0, 1fr) auto; gap: 24px; align-items: center; padding: 20px 0; border-bottom: 1px solid var(--line); }
+    .rows li[hidden] { display: none; }
+    .rows img { width: 112px; height: 76px; object-fit: cover; border-radius: 6px; background: var(--glass); filter: hue-rotate(-32deg) saturate(.85); }
+    .rows h3 { font: 600 1.15rem/1.3 var(--sans); }
+    .rows .where { color: var(--muted); font-size: .98rem; margin-top: 2px; }
+    .rows .specs { margin-top: 6px; font-size: .95rem; }
+    .rows .price { text-align: right; font: 400 1.9rem/1 var(--serif); white-space: nowrap; }
+    .rows .price small { display: block; margin-top: 6px; font: 500 .85rem var(--sans); color: var(--muted); }
+
+    /* Zonas: tipografía como protagonista */
+    .zones { list-style: none; margin: 36px 0 0; padding: 0; }
+    .zones li { display: flex; align-items: baseline; justify-content: space-between; gap: 24px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+    .zones b { font: 400 clamp(2.4rem, 7.5vw, 5.6rem)/1 var(--serif); letter-spacing: -.02em; }
+    .zones span { max-width: 28ch; color: var(--muted); text-align: right; }
+
+    /* Contacto */
+    .contact { background: var(--pine); color: #e8f1ed; border: 0; }
+    .contact .wrap { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 80px); }
+    .contact h2 { color: #fff; }
+    .contact dl { margin: 28px 0 0; display: grid; grid-template-columns: 7.5rem 1fr; gap: 10px 16px; }
+    .contact dt { color: #a8c2b9; }
+    .contact dd { margin: 0; }
+    .ask { align-self: center; border-left: 3px solid var(--flag); padding-left: 28px; }
+    .ask p { font: 400 clamp(1.7rem, 3.2vw, 2.4rem)/1.15 var(--serif); color: #fff; }
+    .ask .btn { margin-top: 24px; border-color: #fff; color: #fff; }
+    footer { padding: 24px 0 40px; color: var(--muted); font-size: .9rem; }
+
+    @media (max-width: 860px) {
+      .hero .wrap, .contact .wrap { grid-template-columns: 1fr; }
+      .arch { max-width: 420px; aspect-ratio: 4 / 4.4; }
+      .site-head nav { gap: 18px; font-size: .95rem; }
+      .rows li { grid-template-columns: 84px minmax(0, 1fr); gap: 14px 16px; }
+      .rows img { width: 84px; height: 64px; }
+      .rows .price { grid-column: 2; text-align: left; font-size: 1.6rem; }
+      .rows .price small { display: inline; margin-left: 8px; }
+      .zones li { flex-direction: column; gap: 4px; }
+      .zones span { text-align: left; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .sun, .glint { animation: none; }
+      .btn { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-bar">
+    <div class="wrap">
+      <span><strong>Sitio de demostración.</strong> Así se ve el asistente instalado en la web de una inmobiliaria: el botón de chat está abajo a la derecha.</span>
+      <details>
+        <summary>Ver código de instalación</summary>
+        <div class="snippet">&lt;script src="https://inmobiliaria-demo-liart.vercel.app/widget.js"
+        data-agency="costa-sur" data-color="#d63a26" async&gt;&lt;/script&gt;</div>
+      </details>
+      <p class="try">Probá preguntando <q>busco una casa frente al mar</q>, <q>qué tenés en alquiler</q> o <q>quiero visitar el apartamento de la Península</q>.</p>
+    </div>
+  </div>
+
+  <header class="site-head">
+    <div class="wrap">
+      <a class="logo" href="#top">Costa Sur<span>Inmobiliaria</span></a>
+      <nav aria-label="Principal">
+        <a href="#propiedades">Propiedades</a>
+        <a href="#zonas">Zonas</a>
+        <a href="#contacto">Contacto</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="wrap">
+        <div>
+          <h1>Donde el Río de la Plata se vuelve mar.</h1>
+          <p class="lead">Casas, apartamentos y terrenos en Punta del Este, Manantiales, La Barra y José Ignacio. Venta y alquiler, todo el año.</p>
+          <div class="actions">
+            <a class="btn main" href="#propiedades">Ver propiedades</a>
+            <button class="btn" type="button" data-open-chat>Preguntale al asistente</button>
+          </div>
+        </div>
+        <div class="arch" role="img" aria-label="Ilustración de un amanecer sobre el mar, con dunas y pinos en primer plano">
+          <svg viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#bfe3d8"/><stop offset="1" stop-color="#f4e6c9"/>
+              </linearGradient>
+              <clipPath id="above"><rect x="0" y="0" width="400" height="312"/></clipPath>
+            </defs>
+            <rect width="400" height="520" fill="url(#sky)"/>
+            <g clip-path="url(#above)"><circle class="sun" cx="206" cy="262" r="74" fill="#d63a26"/></g>
+            <rect y="312" width="400" height="120" fill="#0f4c4a"/>
+            <g class="glint" fill="#d63a26">
+              <rect x="160" y="320" width="92" height="5"/><rect x="172" y="334" width="68" height="5"/>
+              <rect x="182" y="348" width="48" height="5"/><rect x="191" y="362" width="30" height="5"/>
+              <rect x="198" y="376" width="16" height="5"/>
+            </g>
+            <g fill="#bfe3d8" opacity=".35">
+              <rect x="40" y="330" width="60" height="3"/><rect x="300" y="344" width="64" height="3"/>
+              <rect x="70" y="372" width="44" height="3"/><rect x="262" y="392" width="56" height="3"/>
+            </g>
+            <path d="M0 430 C70 396 150 428 232 416 S350 396 400 424 L400 520 L0 520 Z" fill="#ead9b8"/>
+            <path d="M0 470 C90 446 180 478 270 462 S368 448 400 466 L400 520 L0 520 Z" fill="#d8c295"/>
+            <g fill="#0f2f2a">
+              <rect x="64" y="404" width="5" height="40"/><polygon points="66.5,372 48,408 85,408"/><polygon points="66.5,388 44,424 89,424"/>
+              <rect x="112" y="414" width="4" height="30"/><polygon points="114,388 100,416 128,416"/><polygon points="114,400 96,432 132,432"/>
+              <rect x="326" y="420" width="4" height="26"/><polygon points="328,398 316,424 340,424"/>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="block" id="propiedades">
+      <div class="wrap">
+        <h2>Propiedades disponibles</h2>
+        <p class="intro">Una selección de lo que tenemos hoy. Si no encontrás lo que buscás, contanos qué necesitás y lo buscamos.</p>
+        <div class="tools" role="group" aria-label="Filtrar por operación">
+          <button type="button" data-filter="" aria-pressed="true">Todas</button>
+          <button type="button" data-filter="venta" aria-pressed="false">En venta</button>
+          <button type="button" data-filter="alquiler" aria-pressed="false">En alquiler</button>
+        </div>
+        <ul class="rows">
+          <li data-op="venta"><img src="img/casa.svg" alt="" loading="lazy">
+            <div><h3>Chalet frente al mar en Manantiales</h3><p class="where">Manantiales, Punta del Este</p><p class="specs">5 dormitorios, 4 baños, 380 m²</p></div>
+            <p class="price">U$S 640.000</p></li>
+          <li data-op="venta"><img src="img/casa.svg" alt="" loading="lazy">
+            <div><h3>Casa moderna con piscina en Parque del Golf</h3><p class="where">Parque del Golf, Punta del Este</p><p class="specs">4 dormitorios, 3 baños, 320 m²</p></div>
+            <p class="price">U$S 485.000</p></li>
+          <li data-op="venta"><img src="img/apartamento.svg" alt="" loading="lazy">
+            <div><h3>Apartamento de 3 dormitorios en la Península</h3><p class="where">Península, Punta del Este</p><p class="specs">3 dormitorios, 2 baños, 120 m²</p></div>
+            <p class="price">U$S 295.000</p></li>
+          <li data-op="venta"><img src="img/terreno.svg" alt="" loading="lazy">
+            <div><h3>Terreno de 750 m² en La Barra a 300 m del mar</h3><p class="where">La Barra, Punta del Este</p><p class="specs">750 m², con servicios</p></div>
+            <p class="price">U$S 130.000</p></li>
+          <li data-op="alquiler"><img src="img/apartamento.svg" alt="" loading="lazy">
+            <div><h3>Apartamento en torre con servicios</h3><p class="where">Península, Punta del Este</p><p class="specs">2 dormitorios, 2 baños, 95 m²</p></div>
+            <p class="price">U$S 1.800<small>por mes</small></p></li>
+          <li data-op="alquiler"><img src="img/local.svg" alt="" loading="lazy">
+            <div><h3>Local comercial sobre Av. Gorlero</h3><p class="where">Centro, Punta del Este</p><p class="specs">110 m², doble vidriera</p></div>
+            <p class="price">U$S 2.200<small>por mes</small></p></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block" id="zonas">
+      <div class="wrap">
+        <h2>Las zonas que conocemos</h2>
+        <ul class="zones">
+          <li><b>Península</b><span>Puerto, rambla y vida todo el año.</span></li>
+          <li><b>Manantiales</b><span>Frente al mar, entre dunas y pinos.</span></li>
+          <li><b>La Barra</b><span>Chacras, playas abiertas y mucha vida de verano.</span></li>
+          <li><b>José Ignacio</b><span>Tranquilidad, faro y casas de veraneo.</span></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block contact" id="contacto">
+      <div class="wrap">
+        <div>
+          <h2>Hablemos de tu próxima casa</h2>
+          <dl>
+            <dt>Oficina</dt><dd>Av. Gorlero 1234, Punta del Este</dd>
+            <dt>Horario</dt><dd>Lunes a sábado, de 9 a 19 h</dd>
+            <dt>Teléfono</dt><dd>+598 4200 0000</dd>
+          </dl>
+        </div>
+        <div class="ask">
+          <p>Contanos qué buscás y te respondemos al instante, también de noche y los domingos.</p>
+          <button class="btn" type="button" data-open-chat>Abrir el chat</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer><div class="wrap">Costa Sur Inmobiliaria es una marca ficticia de demostración.</div></footer>
+
+  <!-- Una línea: así se instala el asistente en cualquier web. -->
+  <script src="widget.js" data-agency="costa-sur" data-color="#d63a26" data-label="Consultanos" data-open-after="9" async></script>
+
+  <script>
+    // Filtro de la lista (propio de esta web de ejemplo).
+    const tools = document.querySelectorAll("[data-filter]");
+    tools.forEach((b) => b.addEventListener("click", () => {
+      tools.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      document.querySelectorAll(".rows li").forEach((li) => { li.hidden = !!b.dataset.filter && li.dataset.op !== b.dataset.filter; });
+    }));
+    // Los botones "Preguntale al asistente" abren el chat que instaló el widget.
+    document.querySelectorAll("[data-open-chat]").forEach((b) => b.addEventListener("click", () => {
+      const toggle = document.querySelector("#inmo-widget button");
+      if (toggle && toggle.getAttribute("aria-expanded") !== "true") toggle.click();
+    }));
+  </script>
+</body>
+</html>

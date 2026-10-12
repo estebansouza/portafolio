@@ -21,3 +21,16 @@ join (values
 ) as p(slug, title, operation, type, price, bedrooms, bathrooms, garage, area_m2, country, city, neighborhood, status, description, photos)
   on p.slug = a.slug
 where not exists (select 1 from public.properties x where x.agency_id = a.id);
+
+-- Más propiedades de Costa Sur (las usa la página de demostración /demo).
+insert into public.properties (agency_id, title, operation, type, price, bedrooms, bathrooms, garage, area_m2, country, city, neighborhood, status, description, photos)
+select a.id, p.title, p.operation, p.type, p.price, p.bedrooms, p.bathrooms, p.garage, p.area_m2, 'Uruguay', 'Punta del Este', p.neighborhood, 'disponible', p.description, p.photos
+from public.agencies a
+join (values
+  ('Casa moderna con piscina en Parque del Golf', 'venta', 'casa', 485000, 4, 3, 2, 320, 'Parque del Golf', 'Casa de líneas modernas en terreno arbolado, piscina, parrillero y galería con vista al jardín. A minutos del campo de golf.', '{img/casa.svg}'::text[]),
+  ('Apartamento de 3 dormitorios en la Península', 'venta', 'apartamento', 295000, 3, 2, 1, 120, 'Península', 'Piso alto con balcón corrido y vista al mar, living amplio, cocina integrada y garaje. A pasos del puerto y de la rambla.', '{img/apartamento.svg}'),
+  ('Terreno de 750 m² en La Barra a 300 m del mar', 'venta', 'terreno', 130000, 0, 0, 0, 750, 'La Barra', 'Terreno plano y arbolado con servicios, en zona residencial a 300 metros de la playa. Ideal para casa de veraneo.', '{img/terreno.svg}'),
+  ('Local comercial sobre Av. Gorlero', 'alquiler', 'local', 2200, 0, 1, 0, 110, 'Centro', 'Local a la calle con doble vidriera y gran circulación peatonal, ideal para gastronomía o indumentaria. Depósito y baño.', '{img/local.svg}')
+) as p(title, operation, type, price, bedrooms, bathrooms, garage, area_m2, neighborhood, description, photos) on true
+where a.slug = 'costa-sur'
+  and not exists (select 1 from public.properties x where x.agency_id = a.id and x.title = p.title);
