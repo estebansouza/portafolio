@@ -5,10 +5,16 @@ import { fallbackReply, generalReply, askAssistant, extractContact } from "./ass
 const p = { title: "Casa con jardín", operation: "venta", type: "casa", price: 285000, bedrooms: 3, bathrooms: 2, garage: 0, area_m2: 210, city: "Montevideo", neighborhood: "Carrasco", country: "Uruguay", status: "disponible", description: "x" };
 
 // ---- respaldo sin IA ----
-assert.match(fallbackReply(p, "¿Cuánto cuesta?").reply, /US\$ 285,000/);
+assert.match(fallbackReply(p, "¿Cuánto cuesta?").reply, /US\$\s285\.000/);
+const uyu = { ...p, operation: "alquiler", price: 19300, currency: "UYU" };
+assert.match(fallbackReply(uyu, "cuanto sale").reply, /\$\s19\.300\/mes/, "usa la moneda de la propiedad");
+assert.doesNotMatch(fallbackReply(uyu, "cuanto sale").reply, /US\$|dólares/);
+const sinDatos = { ...p, bedrooms: 0 };
+assert.equal(fallbackReply(sinDatos, "cuantos dormitorios tiene").handoff, true, "dormitorios sin cargar: lo confirma un asesor");
+assert.match(fallbackReply(sinDatos, "cuantos dormitorios tiene").reply, /No tengo cargada/);
 assert.equal(fallbackReply(p, "Cuanto sale").handoff, false);
 assert.match(fallbackReply(p, "¿Cuántos dormitorios tiene?").reply, /3 dormitorios/);
-assert.match(fallbackReply(p, "tiene cochera?").reply, /No cuenta con cochera/);
+assert.match(fallbackReply(p, "tiene cochera?").reply, /no figura cochera/);
 assert.match(fallbackReply(p, "¿Dónde queda?").reply, /Carrasco, Montevideo, Uruguay/);
 const visit = fallbackReply(p, "Quisiera agendar una visita el sábado");
 assert.equal(visit.handoff, true);

@@ -3,7 +3,7 @@
 -- Roles: platform_admins (dueño de la plataforma: da de alta inmobiliarias) y agency_members
 -- ('owner' | 'agent' de cada inmobiliaria). Registrarse en Auth NO da permisos por sí solo:
 -- desactivá los registros abiertos (Authentication > Sign In / Providers) y creá los usuarios a mano.
--- Todos los precios están en USD (en alquiler, USD por mes).
+-- Cada propiedad tiene su moneda (USD por defecto); en alquiler el precio es por mes.
 
 -- ---------- Inmobiliarias y permisos ----------
 create table if not exists public.agencies (
@@ -115,6 +115,7 @@ create table if not exists public.properties (
   operation text not null default 'venta' check (operation in ('venta', 'alquiler')),
   type text not null default 'casa' check (type in ('casa', 'apartamento', 'terreno', 'local')),
   price numeric not null check (price >= 0),
+  currency text not null default 'USD' check (currency in ('USD', 'UYU', 'ARS', 'BRL', 'EUR', 'CLP', 'COP', 'MXN', 'PEN')),
   bedrooms int not null default 0 check (bedrooms >= 0),
   bathrooms int not null default 0 check (bathrooms >= 0),
   garage int not null default 0 check (garage >= 0),

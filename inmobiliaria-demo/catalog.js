@@ -1,17 +1,23 @@
 import { listProperties, getAgencyBySlug, isDemo } from "./data.js";
-import { usd, filterProperties, sortProperties, place, TYPES } from "./format.js";
+import { priceOf, currencyOf, filterProperties, sortProperties, place, TYPES, CURRENCIES } from "./format.js";
 import { h, $, demoNotice } from "./ui.js";
 
 // La inmobiliaria se elige con ?agency=<slug>; sin parámetro se muestra la de demostración.
 const slug = (new URLSearchParams(location.search).get("agency") || "nexo").toLowerCase();
-const state = { props: [], operation: "" };
+const state = { props: [], operation: "", currencies: [] };
 
 function render() {
+  // Con varias monedas, el tope de precio solo se aplica dentro de la moneda elegida.
+  const multi = state.currencies.length > 1;
+  const currency = multi ? $("#f-cur").value : "";
+  $("#f-max").disabled = multi && !currency;
+  $("#f-max").title = $("#f-max").disabled ? "Elegí una moneda para filtrar por precio" : "";
   const list = sortProperties(filterProperties(state.props, {
     operation: state.operation,
     type: $("#f-type").value,
     bedrooms: $("#f-beds").value,
-    max: $("#f-max").value,
+    max: $("#f-max").disabled ? "" : $("#f-max").value,
+    currency,
     q: $("#f-q").value,
   }), $("#f-sort").value);
   $("#count").textContent = `${list.length} ${list.length === 1 ? "propiedad" : "propiedades"}`;
@@ -30,7 +36,7 @@ function render() {
                 p.bathrooms ? h("span", {}, `${p.bathrooms} baños`) : null,
                 p.area_m2 ? h("span", {}, `${p.area_m2} m²`) : null),
               h("div", {}, h("span", { class: `badge ${p.status}` }, p.status)),
-              h("div", { class: "price" }, usd(p.price, p.operation)))))
+              h("div", { class: "price" }, priceOf(p)))))
       : [h("p", { class: "muted" }, "No hay propiedades con esos filtros.")]));
 }
 
@@ -42,6 +48,11 @@ try {
   } else {
     const props = await listProperties({ agency });
     state.props = props;
+    state.currencies = [...new Set(props.map(currencyOf))];
+    if (state.currencies.length > 1) {
+      $("#cur-wrap").hidden = false;
+      for (const c of state.currencies) $("#f-cur").append(h("option", { value: c }, CURRENCIES[c]));
+    }
     $("#biz").textContent = agency.name;
     document.title = `${agency.name} · Propiedades`;
     const n = demoNotice(isDemo);

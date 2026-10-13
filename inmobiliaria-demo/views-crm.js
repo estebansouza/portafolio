@@ -42,7 +42,7 @@ export async function conversations(root, only = "") {
         if (l.name) await contactsDb.add({ name: l.name, phone: isEmail ? "" : l.contact, email: isEmail ? l.contact : "", role: "comprador", notes: l.message });
         await dealsDb.add({
           title: l.property_label, contact_name: l.name || "Sin nombre", property_label: l.property_label, stage: "consulta",
-          value: prop?.operation === "venta" ? prop.price : 0, commission_pct: 3, stage_at: new Date().toISOString(), closed_at: null,
+          value: prop?.operation === "venta" && (prop.currency ?? "USD") === "USD" ? prop.price : 0, commission_pct: 3, stage_at: new Date().toISOString(), closed_at: null,
         });
         await updateLead(l.id, { status: "respondido" });
         location.hash = "#/pipeline";

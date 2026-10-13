@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Vista previa del asistente</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; }
+    body { display: flex; flex-direction: column; font: 15px/1.45 system-ui, sans-serif; background: #f3f4f6; color: #1b2430; }
+    .bar { background: #151a19; color: #e6ece9; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 4px 20px; align-items: center; justify-content: space-between; }
+    .bar strong { color: #fff; }
+    .bar a { color: #ffd9a0; }
+    iframe { flex: 1; width: 100%; border: 0; background: #fff; }
+    .msg { margin: 48px auto; max-width: 420px; padding: 0 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="bar" id="bar" hidden>
+    <span><strong id="who"></strong> Así se vería el asistente en la web actual: tocá el botón de chat abajo a la derecha.</span>
+    <a id="open" target="_blank" rel="noopener">Abrir la web sola</a>
+  </div>
+  <p class="msg" id="empty" hidden>Esta vista previa no está disponible.</p>
+  <iframe id="site" title="Web de la inmobiliaria" hidden></iframe>
+
+  <script>
+    // Solo se pueden previsualizar las webs listadas acá (no es un visor de páginas arbitrarias).
+    const PREVIEWS = {
+      shaddai: { name: "Shaddai Inmobiliaria", site: "https://www.shaddainmobiliaria.com/", agency: "shaddai", color: "#012d5e" },
+    };
+    const p = PREVIEWS[new URLSearchParams(location.search).get("c")];
+    if (!p) {
+      document.getElementById("empty").hidden = false;
+    } else {
+      document.title = `Vista previa · ${p.name}`;
+      document.getElementById("who").textContent = `Vista previa para ${p.name}.`;
+      document.getElementById("open").href = p.site;
+      document.getElementById("bar").hidden = false;
+      const frame = document.getElementById("site");
+      frame.src = p.site;
+      frame.hidden = false;
+      // Instalación del asistente: es exactamente esta línea de código en la web real.
+      const s = document.createElement("script");
+      s.src = "widget.js";
+      s.async = true;
+      s.dataset.agency = p.agency;
+      s.dataset.color = p.color;
+      s.dataset.label = "Consultanos";
+      s.dataset.openAfter = "8";
+      document.body.append(s);
+    }
+  </script>
+</body>
+</html>

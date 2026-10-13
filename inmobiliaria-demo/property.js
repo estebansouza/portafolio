@@ -1,5 +1,5 @@
 import { getProperty, getAgencyById, logWhatsappClick, publicSettings } from "./data.js";
-import { usd, whatsappLink, inquiryMessage, place } from "./format.js";
+import { priceOf, whatsappLink, inquiryMessage, place } from "./format.js";
 import { createChat } from "./chat-ui.js";
 import { h, $ } from "./ui.js";
 
@@ -41,7 +41,7 @@ try {
         h("p", { class: "muted" }, place(p)),
         h("span", { class: "badge op" }, p.operation), " ",
         h("span", { class: `badge ${p.status}` }, p.status),
-        h("div", { class: "price" }, usd(p.price, p.operation)),
+        h("div", { class: "price" }, priceOf(p)),
         h("div", { class: "specs" },
           spec("Tipo", p.type),
           spec("Superficie", p.area_m2 ? `${p.area_m2} m²` : "—"),

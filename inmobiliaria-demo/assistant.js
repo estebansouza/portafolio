@@ -1,6 +1,6 @@
 // Asistente de consultas. Intenta responder con IA (/api/chat) y, si el servidor no está
 // disponible o no tiene API key, usa respuestas de respaldo basadas en reglas simples.
-import { usd, place, norm } from "./format.js";
+import { priceOf, place, norm } from "./format.js";
 
 // Si el visitante escribe su email o teléfono en el chat, lo tomamos como dato de contacto.
 export function extractContact(text) {
@@ -26,20 +26,23 @@ export function fallbackReply(p, text) {
     return out("¡Con gusto! Para coordinar una visita necesito tu nombre y un teléfono o email. Un asesor te confirma el horario a la brevedad.", true);
   }
   if (has(t, ["precio", "cuesta", "costo", "valor", "cuanto sale", "cuanto vale", "cuanto es", "cuanto piden", "cuanto el"])) {
-    return out(`El precio es ${usd(p.price, p.operation)}${p.operation === "alquiler" ? "" : " (en dólares)"}. Si querés, un asesor puede darte más detalles de la operación.`);
+    return out(`El precio es ${priceOf(p)}. Si querés, un asesor puede darte más detalles de la operación.`);
   }
   if (has(t, ["dormitorio", "habitacion", "cuarto", "pieza"])) {
-    return out(p.bedrooms ? `Tiene ${p.bedrooms} ${p.bedrooms === 1 ? "dormitorio" : "dormitorios"}.` : "Esta propiedad no tiene dormitorios (no corresponde a su tipo).");
+    if (p.bedrooms) return out(`Tiene ${p.bedrooms} ${p.bedrooms === 1 ? "dormitorio" : "dormitorios"}.`);
+    return ["casa", "apartamento"].includes(p.type)
+      ? out("No tengo cargada la cantidad de dormitorios; un asesor te la confirma.", true)
+      : out("Esta propiedad no tiene dormitorios (no corresponde a su tipo).");
   }
   if (has(t, ["bano"])) return out(p.bathrooms ? `Cuenta con ${p.bathrooms} ${p.bathrooms === 1 ? "baño" : "baños"}.` : "No tengo registrados baños para esta propiedad.");
-  if (has(t, ["garage", "garaje", "cochera", "estacionamiento"])) return out(p.garage ? `Tiene ${p.garage} ${p.garage === 1 ? "cochera" : "cocheras"}.` : "No cuenta con cochera.");
+  if (has(t, ["garage", "garaje", "cochera", "estacionamiento"])) return out(p.garage ? `Tiene ${p.garage} ${p.garage === 1 ? "cochera" : "cocheras"}.` : "En la ficha no figura cochera; un asesor te lo confirma.");
   if (has(t, ["metro", "m2", "superficie", "tamano", "area", "grande"])) return out(p.area_m2 ? `La superficie es de ${p.area_m2} m².` : "No tengo la superficie cargada; un asesor te la confirma.", !p.area_m2);
   if (has(t, ["ubicacion", "barrio", "zona", "donde", "direccion", "queda"])) return out(`Está en ${where}. La dirección exacta se la damos al coordinar la visita.`);
   if (has(t, ["disponible", "sigue", "todavia"])) {
     return out(p.status === "disponible" ? "Sí, la propiedad está disponible." : `Por ahora figura como ${p.status}. Si querés, un asesor te avisa ante cualquier cambio.`, p.status !== "disponible");
   }
   if (has(t, ["hola", "buen", "consulta", "info"])) {
-    return out(`¡Hola! Soy el asistente virtual. Puedo contarte sobre "${p.title}" (${p.operation}, ${usd(p.price, p.operation)}): ambientes, superficie, ubicación y más. ¿Qué te gustaría saber?`);
+    return out(`¡Hola! Soy el asistente virtual. Puedo contarte sobre "${p.title}" (${p.operation}, ${priceOf(p)}): ambientes, superficie, ubicación y más. ¿Qué te gustaría saber?`);
   }
   return out("No tengo ese dato a mano. Dejame tu nombre y un teléfono o email y un asesor te responde a la brevedad.", true);
 }
@@ -54,7 +57,7 @@ export function generalReply(agencyName, text) {
   return out("Gracias por contarme. Dejame tu nombre y un teléfono o email y un asesor te envía opciones que se ajusten a lo que buscás.", true);
 }
 
-const PUBLIC_FIELDS = ["title", "operation", "type", "price", "bedrooms", "bathrooms", "garage", "area_m2", "country", "city", "neighborhood", "status", "description"];
+const PUBLIC_FIELDS = ["title", "operation", "type", "price", "currency", "bedrooms", "bathrooms", "garage", "area_m2", "country", "city", "neighborhood", "status", "description"];
 
 // messages: [{ role: "user" | "assistant", text }]; el último es del visitante.
 export async function askAssistant({ property = null, agency = null, businessName, messages }) {

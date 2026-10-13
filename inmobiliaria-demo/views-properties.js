@@ -1,5 +1,5 @@
 import { listProperties, saveProperty, deleteProperty, getSettings, uploadPhoto } from "./data.js";
-import { usd, TYPES, OPERATIONS, STATUSES } from "./format.js";
+import { priceOf, TYPES, OPERATIONS, STATUSES, CURRENCIES } from "./format.js";
 import { h } from "./ui.js";
 
 const field = (label, input, cls = "") => h("div", { class: cls }, h("label", {}, label), input);
@@ -19,6 +19,7 @@ function propertyForm(v, settings, onDone) {
     garage: text("garage", "number", false),
     country: text("country", "text", false), city: text("city", "text", false), neighborhood: text("neighborhood", "text", false),
     status: sel("status", STATUSES),
+    currency: h("select", {}, Object.entries(CURRENCIES).map(([v, l]) => h("option", { value: v, selected: (p.currency ?? "USD") === v }, l))),
     description: h("textarea", { rows: "3" }, p.description || ""),
   };
   const photoList = h("div", { class: "photo-list" });
@@ -45,7 +46,7 @@ function propertyForm(v, settings, onDone) {
     h("h2", {}, p.id ? "Editar propiedad" : "Nueva propiedad"),
     h("div", { class: "form-grid" },
       field("Título", f.title, "full"),
-      field("Operación", f.operation), field("Tipo", f.type), field("Precio (US$, alquiler: por mes)", f.price),
+      field("Operación", f.operation), field("Tipo", f.type), field("Precio (en alquiler: por mes)", f.price), field("Moneda", f.currency),
       field("Superficie m²", f.area_m2), field("Dormitorios", f.bedrooms), field("Baños", f.bathrooms), field("Cocheras", f.garage),
       field("País", f.country), field("Ciudad", f.city), field("Barrio", f.neighborhood), field("Estado", f.status),
       field("Descripción", f.description, "full"),
@@ -61,7 +62,7 @@ function propertyForm(v, settings, onDone) {
       await saveProperty({
         ...(p.id ? { id: p.id, created_at: p.created_at } : {}),
         title: f.title.value.trim(), operation: f.operation.value, type: f.type.value,
-        price: num(f.price), area_m2: num(f.area_m2), bedrooms: Math.round(num(f.bedrooms)),
+        price: num(f.price), currency: f.currency.value, area_m2: num(f.area_m2), bedrooms: Math.round(num(f.bedrooms)),
         bathrooms: Math.round(num(f.bathrooms)), garage: Math.round(num(f.garage)),
         country: f.country.value.trim(), city: f.city.value.trim(), neighborhood: f.neighborhood.value.trim(),
         status: f.status.value, description: f.description.value.trim(), photos: p.photos,
@@ -91,7 +92,7 @@ export async function render(root) {
         return h("tr", {},
           h("td", {}, p.photos?.[0] ? h("img", { src: p.photos[0], alt: "" }) : ""),
           h("td", {}, p.title, h("div", { class: "muted" }, `${p.operation} · ${p.type}`)),
-          h("td", {}, usd(p.price, p.operation)),
+          h("td", {}, priceOf(p)),
           h("td", {}, status),
           h("td", {},
             h("button", { class: "btn ghost", onclick: () => edit(p) }, "Editar"), " ",
