@@ -1,4 +1,4 @@
-import { isDemo, isLoggedIn, login, logout, getMyContext, setPanelAgency } from "./data.js";
+import { isDemo, isLoggedIn, login, logout, getMyContext, setPanelAgency, sendPasswordReset, setNewPassword } from "./data.js";
 import { session } from "./session.js";
 import { h, $, icon, demoNotice } from "./ui.js";
 
@@ -45,11 +45,58 @@ function loginView() {
     h("p", { class: "muted" }, "Acceso solo para el equipo."),
     demoNotice(isDemo),
     field(isDemo ? "Usuario" : "Email", email), h("br"), field("Contraseña", pass), h("br"),
-    h("button", { class: "btn", type: "submit" }, "Entrar"), msg);
+    h("button", { class: "btn", type: "submit" }, "Entrar"), msg,
+    isDemo ? null : h("p", {}, h("a", { href: "#", class: "muted", onclick: (e) => { e.preventDefault(); forgotView(email.value.trim()); } }, "Olvidé mi contraseña")));
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     try { await login(email.value.trim(), pass.value); start(); }
     catch (err) { msg.textContent = isDemo ? err.message : "Email o contraseña incorrectos."; }
+  });
+  root.replaceChildren(form);
+}
+
+// Pide el email y envía el enlace para crear una contraseña nueva.
+function forgotView(prefill = "") {
+  const email = h("input", { type: "email", autocomplete: "username", placeholder: "tu@email.com", value: prefill });
+  const msg = h("p", { class: "msg" });
+  const form = h("form", { class: "panel", style: "max-width:360px;margin:64px auto" },
+    h("h2", {}, "Recuperar contraseña"),
+    h("p", { class: "muted" }, "Te enviamos por email un enlace para crear una contraseña nueva."),
+    field("Email", email), h("br"),
+    h("button", { class: "btn", type: "submit" }, "Enviar enlace"), msg,
+    h("p", {}, h("a", { href: "#", class: "muted", onclick: (e) => { e.preventDefault(); loginView(); } }, "Volver")));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.className = "msg";
+    try {
+      await sendPasswordReset(email.value.trim());
+      msg.className = "ok";
+      msg.textContent = "Listo: si el email tiene cuenta, te llegará un enlace (revisá también el spam).";
+    } catch { msg.textContent = "No se pudo enviar el email. Probá de nuevo en unos minutos."; }
+  });
+  root.replaceChildren(form);
+}
+
+// Se llega acá desde el enlace del email de recuperación.
+function newPasswordView() {
+  document.body.classList.add("logged-out");
+  logoutBtn.hidden = true;
+  const a = h("input", { type: "password", autocomplete: "new-password", minlength: 8, required: true });
+  const b = h("input", { type: "password", autocomplete: "new-password", minlength: 8, required: true });
+  const msg = h("p", { class: "msg" });
+  const form = h("form", { class: "panel", style: "max-width:360px;margin:64px auto" },
+    h("h2", {}, "Nueva contraseña"),
+    h("p", { class: "muted" }, "Elegí una contraseña de al menos 8 caracteres."),
+    field("Contraseña nueva", a), h("br"), field("Repetila", b), h("br"),
+    h("button", { class: "btn", type: "submit" }, "Guardar y entrar"), msg);
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (a.value !== b.value) { msg.textContent = "Las contraseñas no coinciden."; return; }
+    try {
+      await setNewPassword(a.value);
+      history.replaceState(null, "", location.pathname);
+      start();
+    } catch (err) { msg.textContent = err.message; }
   });
   root.replaceChildren(form);
 }
@@ -126,7 +173,11 @@ async function shell() {
 window.addEventListener("hashchange", () => { if (!document.body.classList.contains("logged-out")) route(); });
 
 async function start() {
-  try { (await isLoggedIn()) ? await shell() : loginView(); }
+  try {
+    // Con el enlace de recuperación, isLoggedIn deja que Supabase lea la sesión temporal de la URL.
+    if (!isDemo && /type=recovery/.test(location.hash)) { await isLoggedIn(); return newPasswordView(); }
+    (await isLoggedIn()) ? await shell() : loginView();
+  }
   catch (e) { root.replaceChildren(h("p", { class: "msg" }, `Error: ${e.message}`)); }
 }
 start();

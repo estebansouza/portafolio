@@ -438,3 +438,28 @@ export async function logout() {
   if (isDemo) return write(LS.session, false);
   await (await sb()).auth.signOut();
 }
+
+// Cambiar la contraseña estando dentro: se confirma la actual y se fija la nueva.
+export async function changePassword(current, next) {
+  if (isDemo) throw new Error("En modo demo no se puede cambiar la contraseña.");
+  const client = await sb();
+  const { session } = must(await client.auth.getSession());
+  if (!session?.user?.email) throw new Error("Tu sesión venció: volvé a entrar.");
+  const check = await client.auth.signInWithPassword({ email: session.user.email, password: current });
+  if (check.error) throw new Error("La contraseña actual no es correcta.");
+  must(await client.auth.updateUser({ password: next }));
+}
+
+// "Olvidé mi contraseña": Supabase envía un email con un enlace que vuelve al panel.
+export async function sendPasswordReset(email) {
+  if (isDemo) throw new Error("En modo demo no hay recuperación de contraseña.");
+  must(await (await sb()).auth.resetPasswordForEmail(email, { redirectTo: new URL("admin", location.href).href }));
+}
+
+// Al abrir el enlace del email, Supabase deja una sesión temporal: acá se fija la contraseña nueva.
+export async function setNewPassword(next) {
+  const client = await sb();
+  const { session } = must(await client.auth.getSession());
+  if (!session) throw new Error("El enlace venció. Pedí uno nuevo desde \"Olvidé mi contraseña\".");
+  must(await client.auth.updateUser({ password: next }));
+}

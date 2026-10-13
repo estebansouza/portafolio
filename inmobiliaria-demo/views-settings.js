@@ -1,4 +1,4 @@
-import { getSettings, saveSettings, isDemo, resetDemo, listMembers, addMember, removeMember, getWhatsapp } from "./data.js";
+import { getSettings, saveSettings, isDemo, resetDemo, listMembers, addMember, removeMember, getWhatsapp, changePassword } from "./data.js";
 import { session, isOwner } from "./session.js";
 import { h, formPanel, demoNotice } from "./ui.js";
 
@@ -33,6 +33,34 @@ async function whatsappPanel(agency) {
     wa
       ? h("p", {}, h("span", { class: "badge disponible" }, "conectado"), ` ${wa.display_phone || "Número conectado"}. La IA responde al instante a los mensajes que reciba ese número; si hace falta una persona, la conversación queda en "Requieren atención".`)
       : h("p", { class: "muted" }, h("span", { class: "badge" }, "no conectado"), " Cuando se conecte el número de WhatsApp de la inmobiliaria, la IA va a responder ahí los mensajes automáticamente. Pedíselo al administrador de la plataforma."));
+}
+
+// Cambio de contraseña del usuario que está dentro del panel.
+function accountPanel() {
+  const cur = h("input", { type: "password", autocomplete: "current-password", required: true });
+  const a = h("input", { type: "password", autocomplete: "new-password", minlength: 8, required: true });
+  const b = h("input", { type: "password", autocomplete: "new-password", minlength: 8, required: true });
+  const msg = h("p", { class: "msg" });
+  const form = h("form", { class: "form-grid", style: "align-items:end;margin-top:12px" },
+    h("div", {}, h("label", {}, "Contraseña actual"), cur),
+    h("div", {}, h("label", {}, "Contraseña nueva (mín. 8)"), a),
+    h("div", {}, h("label", {}, "Repetir la nueva"), b),
+    h("button", { class: "btn", type: "submit" }, "Cambiar contraseña"));
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    msg.className = "msg";
+    if (a.value !== b.value) { msg.textContent = "Las contraseñas nuevas no coinciden."; return; }
+    try {
+      await changePassword(cur.value, a.value);
+      form.reset();
+      msg.className = "ok";
+      msg.textContent = "Contraseña actualizada.";
+    } catch (err) { msg.textContent = err.message; }
+  });
+  return h("div", { class: "card-box" },
+    h("h3", { class: "sec" }, "Mi cuenta"),
+    h("p", { class: "muted" }, `Sesión iniciada como ${session.email}.`),
+    form, msg);
 }
 
 async function teamPanel(root) {
@@ -90,6 +118,7 @@ export async function render(root) {
     h("div", { class: "page-head" }, h("h1", {}, "Configuración")),
     demoNotice(isDemo), form, ok,
     installPanel(session.agency),
+    !isDemo ? accountPanel() : null,
     !isDemo ? await whatsappPanel(session.agency) : null,
     !isDemo && isOwner() ? await teamPanel(root) : null,
     isDemo
